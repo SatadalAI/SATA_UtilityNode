@@ -39,11 +39,25 @@ class Combined_Upscale:
         scaled_images = []
         for img in up_image:
             if mode == "rescale":
-                resized = resize_tensor_opencv(img, original_width, original_height,
-                                               rounding_modulus, mode, supersample,
-                                               rescale_factor, resize_width)
+                # Calculate new dimensions, ensure they are at least 1
+                new_width = max(1, int(original_width * rescale_factor))
+                new_height = max(1, int(original_height * rescale_factor))
+                # Pass safe values to resize_tensor_opencv
+                resized = resize_tensor_opencv(
+                    img,
+                    new_width,
+                    new_height,
+                    rounding_modulus,
+                    mode,
+                    supersample,
+                    rescale_factor,
+                    resize_width
+                )
             else:
-                resized = resize_tensor_gpu(img, resize_width, resize_height, rounding_modulus)
+                # Ensure resize_width and resize_height are at least 1
+                safe_width = max(1, int(resize_width))
+                safe_height = max(1, int(resize_height))
+                resized = resize_tensor_gpu(img, safe_width, safe_height, rounding_modulus)
             scaled_images.append(resized.unsqueeze(0))
 
         images_out = torch.cat(scaled_images, dim=0)

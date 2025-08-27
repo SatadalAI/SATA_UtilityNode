@@ -27,10 +27,16 @@ def resize_tensor_opencv(tensor, original_width, original_height, rounding_modul
         ss_height = max(1, new_height * 8)
         if ss_width > 0 and ss_height > 0:
             np_img = cv2.resize(np_img, (ss_width, ss_height), interpolation=interp)
+            # Check again after supersample
+            if np_img.shape[0] == 0 or np_img.shape[1] == 0:
+                raise ValueError("Image became empty after supersample resize.")
         else:
             raise ValueError(f"Supersample dimensions must be > 0, got ({ss_width}, {ss_height})")
 
     if new_width > 0 and new_height > 0:
+        # Check again before final resize
+        if np_img.shape[0] == 0 or np_img.shape[1] == 0:
+            raise ValueError("Input image for final OpenCV resize has zero width or height.")
         resized = cv2.resize(np_img, (new_width, new_height), interpolation=interp)
     else:
         raise ValueError(f"Resize dimensions must be > 0, got ({new_width}, {new_height})")

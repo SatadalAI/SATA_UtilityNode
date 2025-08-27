@@ -9,8 +9,8 @@ def resize_tensor_opencv(tensor, original_width, original_height, rounding_modul
     CPU-based resizing using OpenCV for 'rescale' mode.
     """
     if mode == 'rescale':
-        new_width = int(original_width * factor)
-        new_height = int(original_height * factor)
+        new_width = max(1, int(original_width * factor))
+        new_height = max(1, int(original_height * factor))
     else:
         raise ValueError("resize_tensor_opencv should only be used for 'rescale' mode.")
 
@@ -19,7 +19,9 @@ def resize_tensor_opencv(tensor, original_width, original_height, rounding_modul
     np_img = tensor.mul(255).byte().cpu().numpy().transpose(1, 2, 0)
 
     if supersample == 'true':
-        np_img = cv2.resize(np_img, (new_width * 8, new_height * 8), interpolation=interp)
+        ss_width = max(1, new_width * 8)
+        ss_height = max(1, new_height * 8)
+        np_img = cv2.resize(np_img, (ss_width, ss_height), interpolation=interp)
 
     resized = cv2.resize(np_img, (new_width, new_height), interpolation=interp)
     return torch.from_numpy(resized.transpose(2, 0, 1)).float().div(255)

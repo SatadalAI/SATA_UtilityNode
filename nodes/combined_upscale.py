@@ -6,10 +6,25 @@ import folder_paths
 
 
 def load_model(model_name):
-    raise NotImplementedError("load_model must be implemented or copied here.")
+    # Example implementation: load a torch model from a known folder
+    model_path = folder_paths.get_full_path("upscale_models", model_name)
+    model = torch.load(model_path, map_location="cpu")
+    model.eval()
+    return model
 
 def upscale_with_model(model, image):
-    raise NotImplementedError("upscale_with_model must be implemented or copied here.")
+    # Example implementation: apply the model to each image in the batch
+    # Assumes image is a batch of tensors [B, C, H, W] or a list of tensors
+    if isinstance(image, torch.Tensor):
+        image_batch = image
+    else:
+        image_batch = torch.stack(image, dim=0)
+    with torch.no_grad():
+        output = model(image_batch)
+    # If model returns a batch, split to list
+    if isinstance(output, torch.Tensor):
+        return [img for img in output]
+    return output
 
 def resize_tensor_opencv(tensor, target_width, target_height, supersample='true', factor=2.0):
     """

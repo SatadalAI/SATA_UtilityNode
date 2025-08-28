@@ -4,7 +4,12 @@ import cv2
 import numpy as np
 import folder_paths
 
-from .model_upscale import load_model, upscale_with_model
+
+def load_model(model_name):
+    raise NotImplementedError("load_model must be implemented or copied here.")
+
+def upscale_with_model(model, image):
+    raise NotImplementedError("upscale_with_model must be implemented or copied here.")
 
 def resize_tensor_opencv(tensor, target_width, target_height, supersample='true', factor=2.0):
     """

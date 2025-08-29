@@ -8,11 +8,7 @@ class Prompt_Machine:
     CATEGORY = "Custom Nodes"
 
     @classmethod
-    def _load_csv(cls):
-        # Go up one level from "nodes/" to "SATA_UtilityNode/"
-        base_dir = os.path.dirname(os.path.dirname(__file__))
-        csv_path = os.path.join(base_dir, "prompts.csv")
-
+    def _load_csv(cls, csv_path):
         options = []
         mapping = {}
 
@@ -42,14 +38,31 @@ class Prompt_Machine:
 
     @classmethod
     def INPUT_TYPES(cls):
-        cls.options, cls.mapping = cls._load_csv()
+        # Default CSV path = one level up (SATA_UtilityNode/prompts.csv)
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        default_csv = os.path.join(base_dir, "prompts.csv")
+
+        # Load CSV once at UI build
+        cls.options, cls.mapping = cls._load_csv(default_csv)
+
         return {
             "required": {
                 "selection": (cls.options, ),
+            },
+            "optional": {
+                "csv_file": ("STRING", {"default": default_csv}),
             }
         }
 
-    def get_prompts(self, selection):
-        positive, negative = self.mapping.get(selection, ("", ""))
-        print(f"[Prompt_Machine] Selected: {selection} -> Positive: {positive[:30]}..., Negative: {negative[:30]}...")
-        return (positive, negative)
+    def get_prompts(self, selection, csv_file=None):
+        # Reload CSV if a different file is specified
+        if csv_file and os.path.exists(csv_file) and csv_file != "":
+            options, mapping = self._load_csv(csv_file)
+        else:
+            options, mapping = self.options, self.mapping
+
+        positive, negative = mapping.get(selection, ("", ""))
+        print(f"[Prompt_Machine] Selected: {selection}")
+        print(f"  Positive: {positive}")
+        print(f"  Negative: {negative}")
+        return (str(positive), str(negative))

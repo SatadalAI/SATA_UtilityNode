@@ -45,7 +45,7 @@ def resize_tensor_opencv(tensor_chw, target_width, target_height, supersample='t
     return tensor_out
 
 
-class Combined_Upscale:
+class Upscale_Machine:
     @classmethod
     def INPUT_TYPES(cls):
         return {

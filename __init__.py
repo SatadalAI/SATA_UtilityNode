@@ -1,14 +1,14 @@
-from .nodes.combined_upscale import Combined_Upscale
+from .nodes.upscale_machine import Upscale_Machine
 from .nodes.prompt_machine import Prompt_Machine
 
 
 NODE_CLASS_MAPPINGS = {
-    "Combined_Upscale": Combined_Upscale,
+    "Upscale_Machine": Upscale_Machine,
     "Prompt_Machine": Prompt_Machine,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Combined_Upscale": "Combined Upscale",
+    "Upscale_Machine": "Upscale Machine",
     "Prompt_Machine": "Prompt Machine",
 }
 

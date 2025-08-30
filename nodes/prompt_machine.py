@@ -1,11 +1,17 @@
 import os
 import csv
+from server import PromptServer
 
 class Prompt_Machine:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("positive", "negative")
     FUNCTION = "get_prompts"
     CATEGORY = "Custom Nodes"
+
+    # Keep track of last loaded CSV + options
+    csv_cache = {}
+    options = ["None"]
+    mapping = {"None": ("", "")}
 
     @classmethod
     def _load_csv(cls, csv_path):
@@ -24,45 +30,58 @@ class Prompt_Machine:
                         options.append(name)
                         mapping[name] = (positive, negative)
 
-            print(f"[Prompt_Machine] Loaded {len(options)} entries from CSV.")
-
+            print(f"[Prompt_Machine] Loaded {len(options)} entries.")
         else:
-            print(f"[Prompt_Machine] ERROR: CSV file not found at {csv_path}")
+            print(f"[Prompt_Machine] ERROR: File not found: {csv_path}")
 
         if not options:
             options = ["None"]
-            mapping["None"] = ("", "")
-            print("[Prompt_Machine] No valid entries found, defaulting to 'None'.")
+            mapping = {"None": ("", "")}
+            print("[Prompt_Machine] No valid entries, using default 'None'.")
 
+        cls.csv_cache[csv_path] = (options, mapping)
         return options, mapping
 
     @classmethod
     def INPUT_TYPES(cls):
-        # Default CSV path = one level up (SATA_UtilityNode/prompts.csv)
+        # Register "sata_prompts" folder for CSVs
         base_dir = os.path.dirname(os.path.dirname(__file__))
-        default_csv = os.path.join(base_dir, "prompts.csv")
+        prompts_dir = os.path.join(base_dir, "prompts")
+        os.makedirs(prompts_dir, exist_ok=True)
 
-        # Load CSV once at UI build
-        cls.options, cls.mapping = cls._load_csv(default_csv)
+        # Default csv path
+        default_csv = os.path.join(prompts_dir, "prompts.csv")
+
+        # Load default if not yet cached
+        if default_csv not in cls.csv_cache:
+            cls.options, cls.mapping = cls._load_csv(default_csv)
+        else:
+            cls.options, cls.mapping = cls.csv_cache[default_csv]
+
+        # Find available CSVs
+        csv_files = [f for f in os.listdir(prompts_dir) if f.endswith(".csv")]
+        csv_paths = [os.path.join(prompts_dir, f) for f in csv_files]
 
         return {
             "required": {
-                "selection": (cls.options, ),
-            },
-            "optional": {
-                "csv_file": ("STRING", {"default": default_csv}),
+                "csv_file": (csv_paths, {"default": default_csv}),
+                "selection": (cls.options, {"default": cls.options[0]}),
             }
         }
 
-    def get_prompts(self, selection, csv_file=None):
-        # Reload CSV if a different file is specified
-        if csv_file and os.path.exists(csv_file) and csv_file != "":
+    def get_prompts(self, csv_file, selection):
+        # Reload only if not cached
+        if csv_file not in self.csv_cache:
             options, mapping = self._load_csv(csv_file)
         else:
-            options, mapping = self.options, self.mapping
+            options, mapping = self.csv_cache[csv_file]
+
+        # Make sure selection is valid
+        if selection not in mapping:
+            selection = options[0]
 
         positive, negative = mapping.get(selection, ("", ""))
-        print(f"[Prompt_Machine] Selected: {selection}")
+        print(f"[Prompt_Machine] Row selected: {selection}")
         print(f"  Positive: {positive}")
         print(f"  Negative: {negative}")
         return (str(positive), str(negative))

@@ -11,45 +11,68 @@ class Prompt_Machine:
     RETURN_NAMES = ("positive", "negative")
     FUNCTION = "get_prompts"
 
-    # where CSVs live (folder next to the node folder)
+    # folder next to 'nodes' (custom_nodes/SATA_UtilityNode/prompts)
     prompts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "prompts"))
     os.makedirs(prompts_dir, exist_ok=True)
 
-    # simple in-memory cache: { "filename.csv": {name: (pos,neg), ... } }
+    # cache keyed by full csv-path -> { name: (positive, negative), ... }
     mapping_cache = {}
 
     @classmethod
     def list_csv_files(cls):
-        """Return list of CSV file basenames in prompts_dir"""
+        """Return list of absolute paths for CSV files in prompts_dir"""
         try:
-            files = [f for f in os.listdir(cls.prompts_dir) if f.lower().endswith(".csv")]
+            files = [
+                os.path.join(cls.prompts_dir, f)
+                for f in sorted(os.listdir(cls.prompts_dir))
+                if f.lower().endswith(".csv")
+            ]
         except Exception:
             files = []
-        return files or ["prompts.csv"]
+
+        # keep at least one "prompts.csv" path so UI isn't empty
+        if not files:
+            files = [os.path.join(cls.prompts_dir, "prompts.csv")]
+        return files
 
     @classmethod
-    def load_csv(cls, csv_file):
-        """Load a CSV and return (options_list, mapping_dict)"""
+    def load_csv(cls, csv_fullpath):
+        """
+        Read CSV (case-insensitive headers) -> return (options_list, mapping_dict)
+        mapping: { name: (positive, negative) }
+        """
         mapping = {}
         options = []
-        if not csv_file:
+
+        if not csv_fullpath:
             return ["None"], {"None": ("", "")}
 
-        csv_path = os.path.join(cls.prompts_dir, csv_file)
-        if os.path.exists(csv_path):
-            _log.info(f"[Prompt_Machine] Loading CSV: {csv_path}")
+        csv_fullpath = os.path.abspath(csv_fullpath)
+
+        if os.path.exists(csv_fullpath):
+            _log.info(f"[Prompt_Machine] Loading CSV: {csv_fullpath}")
             try:
-                with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
+                with open(csv_fullpath, "r", encoding="utf-8-sig", newline="") as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        name = (row.get("name") or "").strip()
-                        positive = (row.get("positive") or "").strip()
-                        negative = (row.get("negative") or "").strip()
+                        if row is None:
+                            continue
+                        # normalize keys to lowercase, strip values
+                        nrow = {}
+                        for k, v in row.items():
+                            if k is None:
+                                continue
+                            nrow[k.strip().lower()] = (v or "").strip()
+                        name = nrow.get("name", "")
+                        positive = nrow.get("positive", "")
+                        negative = nrow.get("negative", "")
                         if name:
                             options.append(name)
                             mapping[name] = (positive, negative)
             except Exception as e:
-                _log.exception(f"[Prompt_Machine] Failed to read CSV '{csv_path}': {e}")
+                _log.exception(f"[Prompt_Machine] Failed to read CSV '{csv_fullpath}': {e}")
+        else:
+            _log.warning(f"[Prompt_Machine] CSV file does not exist: {csv_fullpath}")
 
         if not options:
             options = ["None"]
@@ -59,18 +82,19 @@ class Prompt_Machine:
 
     @classmethod
     def INPUT_TYPES(cls):
-        """Initial UI build: show CSV files and default selection from the first CSV"""
-        csv_files = cls.list_csv_files()
-        default_csv = csv_files[0]
+        """
+        Initial build: csv_file shows full absolute paths; selection is filled from the first CSV.
+        """
+        csv_paths = cls.list_csv_files()
+        default_csv = csv_paths[0]
         options, mapping = cls.load_csv(default_csv)
-        # cache for faster future loads
+        # cache initial file
         cls.mapping_cache[default_csv] = mapping
 
+        # Show full paths in dropdown so selected value equals what refresh_inputs/get_prompts receive
         return {
             "required": {
-                # csv_file shows available basenames (user picks one)
-                "csv_file": (csv_files, {"default": default_csv}),
-                # selection will be populated from the currently-loaded CSV
+                "csv_file": (csv_paths, {"default": default_csv}),
                 "selection": (options, {"default": options[0]}),
             }
         }
@@ -78,47 +102,50 @@ class Prompt_Machine:
     @classmethod
     def refresh_inputs(cls, csv_file=None, **kwargs):
         """
-        IMPORTANT: ComfyUI calls refresh_inputs when a required/optional input changes.
-        Here we rebuild 'selection' when csv_file changes.
+        Called by ComfyUI when an input changes. Rebuild 'selection' based on chosen csv_file.
+        Using absolute paths for csv_file avoids mismatch between displayed value and passed value.
         """
-        csv_files = cls.list_csv_files()
+        csv_paths = cls.list_csv_files()
 
-        if not csv_file or csv_file not in csv_files:
-            # file missing or not in list -> return available csvs and default selection from first file
-            default_csv = csv_files[0]
+        # If the passed csv_file is not in available list, fallback to first file
+        if not csv_file or csv_file not in csv_paths:
+            default_csv = csv_paths[0]
             options, mapping = cls.load_csv(default_csv)
             cls.mapping_cache[default_csv] = mapping
             return {
                 "required": {
-                    "csv_file": (csv_files, {"default": default_csv}),
+                    "csv_file": (csv_paths, {"default": default_csv}),
                     "selection": (options, {"default": options[0]}),
                 }
             }
 
-        # load the chosen csv (always reload fresh so changes are picked up)
+        # load chosen file fresh (so edits on disk are picked up)
         options, mapping = cls.load_csv(csv_file)
         cls.mapping_cache[csv_file] = mapping
 
         return {
             "required": {
-                # keep the csv_file dropdown showing all CSVs but default to chosen file
-                "csv_file": (csv_files, {"default": csv_file}),
-                # update selection dropdown to new CSV options
+                "csv_file": (csv_paths, {"default": csv_file}),
                 "selection": (options, {"default": options[0]}),
             }
         }
 
     def get_prompts(self, csv_file, selection):
-        """Called during node execution; ensures mapping for csv_file exists then returns chosen row"""
-        # ensure mapping cached
+        """Execution-time: ensure mapping exists for csv_file and return selected prompts."""
+        csv_file = os.path.abspath(csv_file) if csv_file else None
+
+        if not csv_file:
+            _log.warning("[Prompt_Machine] No csv_file provided; returning empty prompts.")
+            return ("", "")
+
         if csv_file not in self.mapping_cache:
-            # fallback load
             options, mapping = self.load_csv(csv_file)
             self.mapping_cache[csv_file] = mapping
+        else:
+            mapping = self.mapping_cache[csv_file]
 
-        mapping = self.mapping_cache.get(csv_file, {})
         if selection not in mapping:
-            # pick first available
+            # pick first available name if selection invalid
             selection = next(iter(mapping.keys())) if mapping else "None"
 
         positive, negative = mapping.get(selection, ("", ""))
@@ -126,5 +153,4 @@ class Prompt_Machine:
         _log.info(f"  Positive: {positive!r}")
         _log.info(f"  Negative: {negative!r}")
 
-        # must return tuple matching RETURN_TYPES
         return (str(positive), str(negative))

@@ -12,6 +12,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Prompt_Machine": "Prompt Machine",
 }
 
-WEB_DIRECTORY = "./web/js"
+WEB_DIRECTORY = "./web"
 
 __all__ = ["WEB_DIRECTORY", "NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

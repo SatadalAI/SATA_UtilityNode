@@ -1,0 +1,74 @@
+﻿name,positive,negative
+Photon1,,"cartoon, painting, illustration, (worst quality, low quality, normal quality:2)"
+RealVis,"RAW photo, subject, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3","(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4), (deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, disconnected limbs, mutation, mutated, ugly, disgusting, amputation, UnrealisticDream"
+RevAnime,"((best quality)), ((masterpiece)), (detailed) ",
+Chibi,"full body, chibi, highly detailed","photo, black and white, low contrast"
+Default_Negative,,"Watermark, Text, censored, deformed, bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers"
+Default_Negative (sfw),,"NSFW, Cleavage, Pubic Hair, Nudity, Naked, Au naturel, Watermark, Text, censored, deformed, bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers"
+Default_Negative (Low Token),,"lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"
+3d-model,"professional 3d model {prompt}, octane render, highly detailed, volumetric, dramatic lighting","ugly, deformed, noisy, low poly, blurry, painting"
+Analog film,"analog film photo {prompt}, faded film, desaturated, 35mm photo, grainy, vignette, vintage, Kodachrome, Lomography, stained, highly detailed, found footage","painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured"
+Anime,"anime artwork {prompt}, anime style, key visual, vibrant, studio anime,  highly detailed","photo, deformed, black and white, realism, disfigured, low contrast"
+Biomechanical,"biomechanical style {prompt}, blend of organic and mechanical elements, futuristic, cybernetic, detailed, intricate","natural, rustic, primitive, organic, simplistic"
+Cinematic,"cinematic film still {prompt}, shallow depth of field, vignette, highly detailed, high budget Hollywood film, bokeh, cinemascope, moody, epic, gorgeous, film grain","anime, cartoon, graphic, text, painting, crayon, graphite, abstract, glitch"
+Comic book,"comic {prompt}, graphic illustration, comic art, graphic novel art, vibrant, highly detailed","photograph, deformed, glitch, noisy, realistic, stock photo"
+Cyberpunk,"neonpunk style {prompt}, cyberpunk, vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, dark purple shadows, high contrast, cinematic, ultra detailed, intricate, professional","painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured"
+Digital art,"concept art {prompt}, digital artwork, illustrative, painterly, matte painting, highly detailed","photo, photorealistic, realism, ugly"
+Dreamscape,"dreamscape {prompt}, surreal, ethereal, dreamy, mysterious, fantasy, highly detailed","realistic, concrete, ordinary, mundane"
+Dystopian,"dystopian style {prompt}, bleak, post-apocalyptic, somber, dramatic, highly detailed","ugly, deformed, noisy, blurry, low contrast, cheerful, optimistic, vibrant, colorful"
+Fantasy art,"ethereal fantasy concept art of  {prompt}, magnificent, celestial, ethereal, painterly, epic, majestic, magical, fantasy art, cover art, dreamy","photographic, realistic, realism, 35mm film, dslr, cropped, frame, text, deformed, glitch, noise, noisy, off-center, deformed, cross-eyed, closed eyes, bad anatomy, ugly, disfigured, sloppy, duplicate, mutated, black and white"
+Futuristic,"futuristic style {prompt}, sleek, modern, ultramodern, high tech, detailed","ugly, deformed, noisy, blurry, low contrast, realism, photorealistic, vintage, antique"
+Horror,"horror-themed {prompt}, eerie, unsettling, dark, spooky, suspenseful, grim, highly detailed","cheerful, bright, vibrant, light-hearted, cute"
+Isometric,"isometric style {prompt}, vibrant, beautiful, crisp, detailed, ultra detailed, intricate","deformed, mutated, ugly, disfigured, blur, blurry, noise, noisy, realistic, photographic"
+Manga,"manga style {prompt}, vibrant, high-energy, detailed, iconic, Japanese comic style","ugly, deformed, noisy, blurry, low contrast, realism, photorealistic, Western comic style"
+Photo with Bokeh,"cinematic photo {prompt}, 35mm photograph, film, bokeh, professional, 4k, highly detailed","drawing, painting, crayon, sketch, graphite, impressionist, noisy, blurry, soft, deformed, ugly"
+Photo without Bokeh,"cinematic photo {prompt}, 35mm photograph, film, professional, 4k, highly detailed","bokeh, drawing, painting, crayon, sketch, graphite, impressionist, noisy, blurry, soft, deformed, ugly"
+Photo Long Exposure,"long exposure photo of {prompt}, Blurred motion, streaks of light, surreal, dreamy, ghosting effect, highly detailed","static, noisy, deformed, shaky, abrupt, flat"
+Photo Film Noir,"film noir style {prompt}, monochrome, high contrast, dramatic shadows, 1940s style, mysterious, cinematic","ugly, deformed, noisy, blurry, low contrast, vibrant, colorful"
+Pixel Art,"pixel-art {prompt}, low-res, blocky, pixel art style, 8-bit graphics","sloppy, messy, blurry, noisy, highly detailed, ultra textured, photo, realistic"
+Pixar Style,"pixar style render, caricature, {prompt},  looking at viewer, flat colors, 4k, professional, award-winning, highly detailed, volumetric, dramatic lighting","low poly, painting, realistic, photo, line drawing"
+Sci-fi,"sci-fi style {prompt}, futuristic, technological, space themes, advanced civilizations, light leaks, lens flares","ugly, deformed, noisy, blurry, low contrast, historical, medieval"
+Steampunk,"steampunk style {prompt}, antique, mechanical, brass and copper tones, gears, intricate, detailed","deformed, glitch, noisy, low contrast, anime, photorealistic"
+Watercolor,"watercolor painting {prompt}, vibrant, beautiful, painterly, detailed, textural, artistic","anime, photorealistic, 35mm film, deformed, glitch, low contrast, noisy"
+Character Reference Sheet,"character reference sheet {prompt}, turnaround views, detailed anatomy, color palette, multiple poses, highly detailed","simplistic, minimalist, vague, incomplete"
+Enhancer,"breathtaking {prompt}, masterpiece, award-winning, professional, highly detailed","ugly, deformed, noisy, blurry, distorted, grainy"
+Lighting: Artificial,artificial light,
+Lighting: Back,back lighting,
+Lighting: Bottom,bottom lighting,
+Lighting: Chiaroscuro,chiaroscuro lighting,
+Lighting: Cinematic,cinematic lighting,
+Lighting: Dramatic,dramatic lighting,
+Lighting: High key,high key lighting,
+Lighting: Low key,low key lighting,
+Lighting: Natural,natural light,
+Lighting: Rembrandt,Rembrandt lighting,
+Lighting: Rim,rim lighting,
+Lighting: Side,side lighting,
+Lighting: Split,split lighting,
+Lighting: Top,top lighting,
+"Cotton, Fine","{prompt} in fine cotton fabric, highly detailed, gorgeous, matte fabric","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+"Cotton, Regular","{prompt} dress in heavy knit cotton fabric,  matte fabric, gorgeous cloth, highly detailed, cinematic","wrinkles, linen, seethrough, transparent, anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+Denim,"{prompt} in heavy japanese (denim fabric), highly detailed, hard drape","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+"Flannel, Brushed","{prompt} in soft woven brushed flannel, highly detailed, fuzzy flannel cloth, cashmere flannel","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+Latex/Plastic,"{prompt} dress in shiny latex plastic material, expensive exquisite latex fabric, tight fitting","metallic, nude, naked, fabric wrinkles, anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+"Latex/Plastic, Glossy","{prompt} in shiny wet glossy latex material, hard lighting, expensive exquisite latex fabric, tight fitting","metallic, nude, naked, fabric wrinkles, anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+Leather,"{prompt} in smooth thin leather, highly detailed, expensive exquisite leather","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+Linen,"{prompt} in linen fabric, loosely woven, gorgeous cloth, highly detailed","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+Silk,"{prompt} in silk cloth, highly detailed, gorgeous, sheen lustre","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+Velvet,"{prompt} in smooth velvet fabric, gorgeous exquisite cloth, highly detailed, fuzzy velvet cloth, expensive","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+"Wool, Fine knit","{prompt} in wool cloth, highly detailed, gorgeous, fine knit cashmere wool fabric","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+"Wool, Heavy knit","{prompt} in chunky heavy wool yarn, highly detailed, heavy knit large wool fabric, sailor's wool","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+"Wool, Cable knit","{prompt} in chunky heavy cable knit wool yarn, highly detailed, cable knit large wool fabric","anime, graphic, text, painting, crayon, graphite, glitch, cartoon, ugly, deformed, noisy, blurry, distorted"
+Ghibli,"(Studio ghibli style, Art by Hayao Miyazaki:1.2), Anime Style, Manga Style, Hand drawn, cinematic, Sharp focus, humorous illustration, big depth of field, Masterpiece, concept art, trending on artstation, Vivid colors, Simplified style, trending on ArtStation, trending on CGSociety, Intricate, Vibrant colors, Soft Shading, Simplistic Features, Sharp Angles, Playful",
+Vector Illustrations,"Vector art, Vivid colors, Clean lines, Sharp edges, Minimalist, Precise geometry, Simplistic, Smooth curves, Bold outlines, Crisp shapes, Flat colors, Illustration art piece, High contrast shadows, Technical illustration, Graphic design, Vector graphics, High contrast, Precision artwork, Linear compositions, Scalable artwork, Digital art",
+Digital Painting,"glow effects, godrays, Hand drawn, render, 8k, octane render, cinema 4d, blender, dark, atmospheric 4k ultra detailed, cinematic, Sharp focus, big depth of field, Masterpiece, colors, 3d octane render, 4k, concept art, trending on artstation, hyperrealistic, Vivid colors, extremely detailed CG unity 8k wallpaper, trending on CGSociety, Intricate, High Detail, dramatic",
+Indie Game,"Indie game art, Vector Art, Borderlands style, Arcane style, Cartoon style, Line art, Disctinct features, Hand drawn, Technical illustration, Graphic design, Vector graphics, High contrast, Precision artwork, Linear compositions, Scalable artwork, Digital art, cinematic sensual, Sharp focus, humorous illustration, big depth of field, Masterpiece, trending on artstation, Vivid colors, trending on ArtStation, trending on CGSociety, Intricate, Low Detail, dramatic",
+Original Photo Style,"Photorealistic, Hyperrealistic, Hyperdetailed, analog style, soft lighting, subsurface scattering, realistic, heavy shadow, masterpiece, best quality, ultra realistic, 8k, golden ratio, Intricate, High Detail, film photography, soft focus",
+Black and White Film Noir,"(b&w, Monochromatic, Film Photography:1.3),  Photorealistic, Hyperrealistic, Hyperdetailed, film noir, analog style, soft lighting, subsurface scattering, realistic, heavy shadow, masterpiece, best quality, ultra realistic, 8k, golden ratio, Intricate, High Detail, film photography, soft focus",
+Isometric Rooms,"Tiny cute isometric in a cutaway box, soft smooth lighting, soft colors, 100mm lens, 3d blender render",
+Space Hologram,"hologram floating in space, a vibrant digital illustration, dribbble, quantum wavetracing, black background, behance hd",
+Cute Creatures,"3d fluffy, closeup cute and adorable, cute big circular reflective eyes, long fuzzy fur, Pixar render, unreal engine cinematic smooth, intricate detail, cinematic",
+Realistic Photo Portraits,"RAW candid cinema, 16mm, color graded portra 400 film, remarkable color, ultra realistic, textured skin, remarkable detailed pupils, realistic dull skin noise, visible skin detail, skin fuzz, dry skin, shot with cinematic camera",
+Professional Scenic Photographs,"long shot scenic professional photograph of {prompt}, perfect viewpoint, highly detailed, wide-angle lens, hyper realistic, with dramatic sky, polarizing filter, natural lighting, vivid colors, everything in sharp focus, HDR, UHD, 64K",
+Skin Enhancer,"detailed skin texture, (blush:0.5), (goosebumps:0.5), subsurface scattering, dry skin, fuzzy skin",
+Skin Enhancer (clean),"detailed skin texture, (blush:0.2), (goosebumps:0.3), subsurface scattering, dry skin, fuzzy skin",

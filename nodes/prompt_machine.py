@@ -47,35 +47,36 @@ class Prompt_Machine:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING")
-    RETURN_NAMES = ("positive", "negative")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_NAMES = ("positive", "negative", "note")
     FUNCTION = "get_prompts"
     CATEGORY = "SATA_UtilityNode"
 
     def get_prompts(self, csv_file, name):
         if csv_file == "None" or name == "None":
-            return ("", "")
+            return ("", "", "null")
         path = os.path.join(CSV_DIR, csv_file)
         if not os.path.exists(path):
             print(f"[PromptMachine] CSV file not found: {path}")
-            return ("", "")
+            return ("", "", "null")
         with open(path, "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             if not reader.fieldnames:
                 print(f"[PromptMachine] CSV has no header: {csv_file}")
-                return ("", "")
+                return ("", "", "null")
             print(f"[PromptMachine] CSV header in {csv_file}: {reader.fieldnames}")
             field_map = {fn.strip().lower(): fn for fn in reader.fieldnames}
             if "name" not in field_map:
                 print(f"[PromptMachine] 'name' column missing in CSV: {csv_file}")
-                return ("", "")
+                return ("", "", "null")
             name_field = field_map["name"]
             pos_field = field_map.get("positive", "positive")
             neg_field = field_map.get("negative", "negative")
+            note_field = field_map.get("note", "note")
             for row in reader:
                 if row.get(name_field) == name:
-                    return (row.get(pos_field, ""), row.get(neg_field, ""))
-        return ("", "")
+                    return (row.get(pos_field, ""), row.get(neg_field, ""), row.get(note_field, ""))
+        return ("", "", "","null")
 
 
 # REST endpoints for frontend refresh

@@ -15,6 +15,7 @@ It includes:
 - **Upscale Machine:** High-quality model-based image upscaling with aspect-ratio preserving rescale.
 - **Prompt Machine:** Easy prompt selection from a CSV for positive/negative prompt workflows.
 - **Touchpad Pan & Zoom:** Seamless navigation for large images in the ComfyUI preview panel.
+- **Resolution Machine:** Quick selection of model-specific image resolutions for popular models.
 
 ---
 
@@ -39,6 +40,14 @@ It includes:
 
 - **Preview Navigation:** Enables smooth pan and zoom for large images in the ComfyUI preview panel.
 - **User Experience:** Makes inspecting high-res outputs fast and intuitive.
+
+### 📏 Resolution Machine
+
+- **Model-aware Resolution Selection:** Choose from a list of recommended resolutions for each supported model.
+- **Auto-populate Width/Height:** Selecting a resolution automatically fills in the correct width and height.
+- **Manual Override:** You can manually set width/height, which clears the preset selection.
+- **Supports Many Models:** Includes presets for SD1.5, SDXL, Illustrious XL, Pony XL, Flux.1 Dev, Qwen-Image, Wan2.2-S2V, SD3.5 Large, Lumina-Image 2.0, and more.
+- **UI Integration:** Intuitive dropdowns for model and resolution selection in the ComfyUI interface.
 
 ---
 
@@ -100,6 +109,24 @@ It includes:
 
 - **No node configuration required.**  
 - Enables pan/zoom in the ComfyUI preview panel for large images.
+
+---
+
+### Resolution Machine
+
+| Name         | Type   | Description                                      |
+|--------------|--------|--------------------------------------------------|
+| `model`      | STRING | Model name (select from supported models)        |
+| `resolution` | STRING | Resolution preset name (auto-populates size)     |
+| `width`      | INT    | Image width (can be set manually)                |
+| `height`     | INT    | Image height (can be set manually)               |
+
+**Outputs:**
+
+| Name     | Type | Description                |
+|----------|------|----------------------------|
+| `width`  | INT  | Final image width          |
+| `height` | INT  | Final image height         |
 
 ---
 

@@ -7,9 +7,6 @@ class Resolution_Machine:
 
     @classmethod
     def _get_config(cls):
-        """Hard-coded model->resolutions JSON. We append a 'Custom (manual)' entry
-        to every model to avoid validation failures when user edits width/height manually.
-        """
         cfg = {
           "models": [
             {
@@ -29,7 +26,7 @@ class Resolution_Machine:
               "model": "SDXL",
               "resolutions": [
                 { "name": "Square (1:1 native)", "width": 1024, "height": 1024 },
-                { "name": "Portrait (2:3)", "width": 832, "height": 1248 },
+                { "name": "Portrait (2:3)", "width": 832, "height": 1216 },
                 { "name": "Standard (3:4)", "width": 880, "height": 1176 },
                 { "name": "Large Format (4:5)", "width": 912, "height": 1144 },
                 { "name": "SD TV (4:3)", "width": 1176, "height": 888 },
@@ -44,24 +41,12 @@ class Resolution_Machine:
               ]
             },
             {
-              "model": "Illustrious XL v1.0",
+              "model": "Illustrious XL",
               "resolutions": [
                 { "name": "Minimum training bound", "width": 512, "height": 512 },
-                { "name": "Non-standard example", "width": 1248, "height": 1824 },
-                { "name": "Native high-res support", "width": 1536, "height": 1536 }
-              ]
-            },
-            {
-              "model": "Illustrious XL v3.0",
-              "resolutions": [
-                { "name": "Minimum usable", "width": 256, "height": 256 },
+                { "name": "standard example", "width": 1024, "height": 1024 },
                 { "name": "Standard high-res", "width": 1536, "height": 1536 },
-                { "name": "Maximum native", "width": 2048, "height": 2048 }
-              ]
-            },
-            {
-              "model": "Pony XL",
-              "resolutions": [
+                { "name": "Maximum native", "width": 2048, "height": 2048 },
                 { "name": "Portrait-tall", "width": 832, "height": 1216 },
                 { "name": "Landscape-wide", "width": 1216, "height": 832 },
                 { "name": "Square (1:1)", "width": 1024, "height": 1024 }
@@ -104,17 +89,11 @@ class Resolution_Machine:
                 { "name": "832×1216 portrait", "width": 832, "height": 1216 },
                 { "name": "1216×832 landscape", "width": 1216, "height": 832 }
               ]
-            },
-            {
-              "model": "Lumina-Image 2.0",
-              "resolutions": [
-                { "name": "Default (1 MP square)", "width": 1024, "height": 1024 }
-              ]
             }
           ]
         }
 
-        # Append Custom option to every model's resolutions (idempotent)
+        # Append Custom option idempotently
         for m in cfg["models"]:
             if not any(r["name"] == "Custom (manual)" for r in m.get("resolutions", [])):
                 m.setdefault("resolutions", []).append({"name": "Custom (manual)", "width": 0, "height": 0})
@@ -123,57 +102,38 @@ class Resolution_Machine:
 
     @classmethod
     def INPUT_TYPES(cls, context=None):
-        """Return model list and compile a global (deterministic) resolution list.
-           We return a list[str] for 'resolution' so ComfyUI always creates a COMBO dropdown.
+        """Expose model list and a default resolution list (for the default model).
+           Frontend will dynamically set the resolution options for other models using the REST API.
         """
         cfg = cls._get_config()
-
-        # models (keep order)
         models = [m["model"] for m in cfg["models"]]
-
-        # Build a deterministic list of unique resolution names (preserve model order)
-        seen = set()
-        all_resolutions = []
-        for m in cfg["models"]:
-            for r in m.get("resolutions", []):
-                name = r.get("name")
-                if name and name not in seen:
-                    seen.add(name)
-                    all_resolutions.append(name)
-
-        # Guarantee non-empty list (shouldn't be needed, but defensive)
-        if not all_resolutions:
-            all_resolutions = ["Custom (manual)"]
-
-        # default model & default resolution (first non-custom of default model preferred)
         default_model = models[0] if models else ""
-        default_res = None
+
+        # Use default_model resolutions so widget is created at instantiation
         model_obj = next((m for m in cfg["models"] if m["model"] == default_model), None)
         if model_obj:
-            first_non_custom = next((r for r in model_obj["resolutions"] if r["name"] != "Custom (manual)"), None)
-            if first_non_custom:
-                default_res = first_non_custom["name"]
-            else:
-                default_res = model_obj["resolutions"][0]["name"]
-        if not default_res:
-            default_res = all_resolutions[0]
+            resolutions = [r["name"] for r in model_obj.get("resolutions", [])]
+        else:
+            resolutions = ["Custom (manual)"]
 
-        # default width/height derived from selected default resolution / model
-        default_width = 512
-        default_height = 512
-        if model_obj and default_res:
-            res_obj = next((r for r in model_obj["resolutions"] if r["name"] == default_res), None)
-            if res_obj:
-                default_width = res_obj["width"]
-                default_height = res_obj["height"]
+        # pick a default resolution that's non-custom if possible
+        default_res = next((n for n in resolutions if n != "Custom (manual)"), resolutions[0])
+
+        # determine defaults for width/height from default_res
+        default_w = 512
+        default_h = 512
+        if model_obj:
+            r_obj = next((r for r in model_obj["resolutions"] if r["name"] == default_res), None)
+            if r_obj:
+                default_w = r_obj["width"]
+                default_h = r_obj["height"]
 
         return {
             "required": {
                 "model": (models if models else ["null"], {"default": default_model}),
-                # Declare as list[str] so ComfyUI builds a COMBO dropdown reliably.
-                "resolution": (all_resolutions, {"default": default_res, "forceInput": True, "force_input": True}),
-                "width": ("INT", {"default": default_width, "min": 1, "max": 16384, "step": 1}),
-                "height": ("INT", {"default": default_height, "min": 1, "max": 16384, "step": 1}),
+                "resolution": (resolutions if resolutions else ["Custom (manual)"], {"default": default_res}),
+                "width": ("INT", {"default": default_w, "min": 1, "max": 16384, "step": 1}),
+                "height": ("INT", {"default": default_h, "min": 1, "max": 16384, "step": 1}),
             }
         }
 
@@ -182,20 +142,16 @@ class Resolution_Machine:
     FUNCTION = "run"
 
     def run(self, model, resolution, width, height):
-        """If the chosen resolution exists for the selected model and is not Custom,
-           return the predefined width & height; otherwise return manual values.
-        """
         cfg = self._get_config()
         model_obj = next((m for m in cfg["models"] if m["model"] == model), None)
         if model_obj and resolution and resolution != "Custom (manual)":
             res_obj = next((r for r in model_obj["resolutions"] if r["name"] == resolution), None)
             if res_obj:
                 return res_obj["width"], res_obj["height"]
-        # fallback -> manual
         return width, height
 
 
-# REST endpoint so frontend can fetch the full mapping (optional but useful)
+# REST endpoint for frontend dynamic updates
 @PromptServer.instance.routes.get("/sata/resolution_machine/config")
 async def get_resolution_config(request):
     return web.json_response(Resolution_Machine._get_config())

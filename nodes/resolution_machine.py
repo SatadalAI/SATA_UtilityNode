@@ -1,9 +1,14 @@
-# resolution_machine.py
 from server import PromptServer
 from aiohttp import web
 
 class Resolution_Machine:
     CATEGORY = "SATA_UtilityNode"
+
+    # persist last-used selections
+    last_model = None
+    last_resolution = None
+    last_width = None
+    last_height = None
 
     @classmethod
     def _get_config(cls):
@@ -102,31 +107,32 @@ class Resolution_Machine:
 
     @classmethod
     def INPUT_TYPES(cls, context=None):
-        """Expose model list and a default resolution list (for the default model).
-           Frontend will dynamically set the resolution options for other models using the REST API.
-        """
         cfg = cls._get_config()
         models = [m["model"] for m in cfg["models"]]
-        default_model = models[0] if models else ""
 
-        # Use default_model resolutions so widget is created at instantiation
+        # restore last used model or default
+        default_model = cls.last_model if cls.last_model in models else (models[0] if models else "")
+
         model_obj = next((m for m in cfg["models"] if m["model"] == default_model), None)
         if model_obj:
             resolutions = [r["name"] for r in model_obj.get("resolutions", [])]
         else:
             resolutions = ["Custom (manual)"]
 
-        # pick a default resolution that's non-custom if possible
-        default_res = next((n for n in resolutions if n != "Custom (manual)"), resolutions[0])
+        # restore last used resolution if valid
+        if cls.last_resolution and cls.last_resolution in resolutions:
+            default_res = cls.last_resolution
+        else:
+            default_res = next((n for n in resolutions if n != "Custom (manual)"), resolutions[0])
 
-        # determine defaults for width/height from default_res
-        default_w = 512
-        default_h = 512
-        if model_obj:
-            r_obj = next((r for r in model_obj["resolutions"] if r["name"] == default_res), None)
+        # determine defaults for width/height
+        default_w, default_h = 512, 512
+        if cls.last_width and cls.last_height:
+            default_w, default_h = cls.last_width, cls.last_height
+        else:
+            r_obj = next((r for r in model_obj["resolutions"] if r["name"] == default_res), None) if model_obj else None
             if r_obj:
-                default_w = r_obj["width"]
-                default_h = r_obj["height"]
+                default_w, default_h = r_obj["width"], r_obj["height"]
 
         return {
             "required": {
@@ -147,7 +153,14 @@ class Resolution_Machine:
         if model_obj and resolution and resolution != "Custom (manual)":
             res_obj = next((r for r in model_obj["resolutions"] if r["name"] == resolution), None)
             if res_obj:
-                return res_obj["width"], res_obj["height"]
+                width, height = res_obj["width"], res_obj["height"]
+
+        # store last selections for persistence
+        Resolution_Machine.last_model = model
+        Resolution_Machine.last_resolution = resolution
+        Resolution_Machine.last_width = width
+        Resolution_Machine.last_height = height
+
         return width, height
 
 

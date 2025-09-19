@@ -1,0 +1,61 @@
+{
+  "SD 1.5": {
+    "Square (1:1) 512x512": { "width": 512, "height": 512 },
+    "Square high-res (1:1) 768x768": { "width": 768, "height": 768 },
+    "Landscape (3:2) 768x512": { "width": 768, "height": 512 },
+    "Portrait (2:3) 512x768": { "width": 512, "height": 768 },
+    "Landscape (4:3) 768x576": { "width": 768, "height": 576 },
+    "Portrait (3:4) 576x768": { "width": 576, "height": 768 },
+    "Widescreen (16:9) 912x512": { "width": 912, "height": 512 },
+    "Tall (9:16) 512x912": { "width": 512, "height": 912 },
+	"Custom (manual)": { "width": 0, "height": 0 }
+  },
+
+  "SDXL_Illustrious_Pony": {
+    "Square (1:1) 1024x1024": { "width": 1024, "height": 1024 },
+    "Landscape (3:2) 1280x832": { "width": 1280, "height": 832 },
+    "Portrait (2:3) 832x1280": { "width": 832, "height": 1280 },
+    "Photography (4:3) 1152x896": { "width": 1152, "height": 896 },
+    "Portrait Insta (3:4) 896x1152": { "width": 896, "height": 1152 },
+    "Widescreen (16:9) 1344x768": { "width": 1344, "height": 768 },
+    "Vertical (9:16) 768x1344": { "width": 768, "height": 1344 },
+    "Cinematic (21:9) 1536x640": { "width": 1536, "height": 640 },
+    "Cinematic Portrait (9:21) 640x1536": { "width": 640, "height": 1536 },
+    "Best Landscape (19:13) 1216x832": { "width": 1216, "height": 832 },
+    "Best Portrait (13:19) 832x1216": { "width": 832, "height": 1216 },
+    "Mini Portrait (768x1152)": { "width": 768, "height": 1152 },
+    "Mini Landscape (1152x768)": { "width": 1152, "height": 768 },
+	"Custom (manual)": { "width": 0, "height": 0 }
+  },
+
+  "Flux": {
+    "High-res (16:9) 1920x1088": { "width": 1920, "height": 1088 },
+    "Square Medium (1:1) 768x768": { "width": 768, "height": 768 },
+    "Portrait Small (3:4) 768x1024": { "width": 768, "height": 1024 },
+    "Landscape Small (4:3) 1024x768": { "width": 1024, "height": 768 },
+    "Wide Small (3:2) 1152x768": { "width": 1152, "height": 768 },
+    "Portrait Medium (2:3) 768x1152": { "width": 768, "height": 1152 },
+    "Ultra Wide Small (2:1) 1536x768": { "width": 1536, "height": 768 },
+    "Portrait Large (1:2) 768x1536": { "width": 768, "height": 1536 },
+    "Square Large (1:1) 1024x1024": { "width": 1024, "height": 1024 },
+    "Portrait Small HD (7:10) 896x1280": { "width": 896, "height": 1280 },
+    "Landscape Small HD (10:7) 1280x896": { "width": 1280, "height": 896 },
+    "Wide Medium (12:7) 1536x896": { "width": 1536, "height": 896 },
+    "Portrait HD (7:12) 896x1536": { "width": 896, "height": 1536 },
+	"Custom (manual)": { "width": 0, "height": 0 }
+  },
+
+  "Qwen-Image": {
+    "Square (1:1)": { "width": 1328, "height": 1328 },
+    "Widescreen (16:9)": { "width": 1664, "height": 928 },
+    "Tall (9:16)": { "width": 928, "height": 1664 },
+    "Landscape (4:3)": { "width": 1472, "height": 1140 },
+    "Portrait (3:4)": { "width": 1140, "height": 1472 },
+	"Custom (manual)": { "width": 0, "height": 0 }
+  },
+
+  "Wan2.2": {
+    "720p HD video": { "width": 1280, "height": 720 },
+	"Custom (manual)": { "width": 0, "height": 0 }
+  }
+}

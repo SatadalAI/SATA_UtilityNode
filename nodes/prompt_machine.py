@@ -41,7 +41,6 @@ def read_names_from_csv(filename):
                 val = raw.strip()
                 if val:
                     names.append(val)
-            print(f"[PromptMachine] Loaded {len(names)} names from {filename}")
             return names
     except Exception as e:
         print(f"[PromptMachine] read_names_from_csv error for {filename}: {e}")
@@ -98,8 +97,6 @@ class Prompt_Machine:
         # default_name set to first name of default CSV if available
         names = read_names_from_csv(default_csv) if default_csv != "None" else []
         default_name = names[0] if names else "None"
-
-        print(f"[PromptMachine] INIT - default_csv={default_csv}, default_name={default_name}")
 
         return {
             "required": {

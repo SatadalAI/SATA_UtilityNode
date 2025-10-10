@@ -46,7 +46,7 @@ class Resolution_Machine:
     RETURN_TYPES = ("INT", "INT")
     RETURN_NAMES = ("width", "height")
     FUNCTION = "get_resolution"
-    CATEGORY = "SATA Utility"
+    CATEGORY = "SATA_UtilityNode"
 
     def get_resolution(self, model, resolution, custom_width, custom_height):
         config = load_config()

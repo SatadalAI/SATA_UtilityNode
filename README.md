@@ -140,3 +140,5 @@ MIT License
 
 - [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
 - [SATA Utility Node GitHub](https://github.com/SatadalAI/SATA_UtilityNode)
+ - [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
+ - [SATA Utility Node GitHub](https://github.com/SatadalAI/SATA_UtilityNode)

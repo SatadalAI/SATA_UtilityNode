@@ -1,3 +1,4 @@
+import os
 import torch
 import cv2
 import numpy as np
@@ -5,12 +6,6 @@ import folder_paths
 import comfy.utils
 from comfy import model_management
 from spandrel import ModelLoader
-
-try:
-    import tensorrt as trt
-    TENSORRT_AVAILABLE = True
-except ImportError:
-    TENSORRT_AVAILABLE = False
 
 
 def resize_tensor_opencv(tensor_chw, target_width, target_height, supersample='true', factor=2.0):
@@ -27,13 +22,13 @@ def resize_tensor_opencv(tensor_chw, target_width, target_height, supersample='t
     np_img = tensor_chw.permute(1, 2, 0).detach().cpu().numpy()
     np_img = (np.clip(np_img, 0.0, 1.0) * 255.0).astype(np.uint8)
 
-    if np_img.ndim == 2: 
+    if np_img.ndim == 2:
         np_img = cv2.cvtColor(np_img, cv2.COLOR_GRAY2RGB)
     elif np_img.shape[2] == 1:
         np_img = cv2.cvtColor(np_img, cv2.COLOR_GRAY2RGB)
     elif np_img.shape[2] == 4:
         np_img = cv2.cvtColor(np_img, cv2.COLOR_RGBA2RGB)
-    elif np_img.shape[2] > 3: 
+    elif np_img.shape[2] > 3:
         np_img = np_img[:, :, :3]
 
     if np_img.shape[0] == 0 or np_img.shape[1] == 0:
@@ -62,7 +57,6 @@ class Upscale_Machine:
                 "rescale_factor": ("FLOAT", {"default": 2.0, "min": 0.01, "max": 16.0, "step": 0.01}),
                 "supersample": (["true", "false"],),
                 "rounding_modulus": ("INT", {"default": 8, "min": 1, "max": 1024, "step": 1}),
-                "use_tensorrt": ("BOOLEAN", {"default": False}),
             }
         }
 
@@ -71,61 +65,21 @@ class Upscale_Machine:
     FUNCTION = "upscale"
     CATEGORY = "SATA_UtilityNode"
 
-    def load_model(self, model_name, use_tensorrt=False):
-        """Load ESRGAN/RealESRGAN/AESRGAN with optional TensorRT optimization"""
+    def load_model(self, model_name):
+        """Load ESRGAN/RealESRGAN/AESRGAN from the project's upscale_models folder.
+
+        Only legacy PyTorch/spandrel models are supported by this simplified node.
+        """
+        if not model_name:
+            raise ValueError("No upscale model selected or provided.")
+
         model_path = folder_paths.get_full_path("upscale_models", model_name)
         model_loader = ModelLoader()
         model = model_loader.load_from_file(model_path)
-        
+
         if model is None:
             raise RuntimeError(f"Failed to load upscale model: {model_name}")
-            
-        if use_tensorrt and TENSORRT_AVAILABLE:
-            try:
-                # Convert model to TensorRT
-                logger = trt.Logger(trt.Logger.WARNING)
-                builder = trt.Builder(logger)
-                network = builder.create_network(1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
-                parser = trt.OnnxParser(network, logger)
-                
-                # Export model to ONNX first
-                torch.onnx.export(model, torch.randn(1, 3, 64, 64), "/tmp/temp.onnx")
-                
-                with open("/tmp/temp.onnx", 'rb') as f:
-                    parser.parse(f.read())
-                
-                config = builder.create_builder_config()
-                config.max_workspace_size = 1 << 30  # 1GB
-                engine = builder.build_engine(network, config)
-                
-                if engine is None:
-                    raise RuntimeError("Failed to build TensorRT engine")
-                
-                context = engine.create_execution_context()
-                
-                # Wrap TensorRT engine in a pytorch module
-                class TRTWrapper(torch.nn.Module):
-                    def __init__(self, engine, context):
-                        super().__init__()
-                        self.engine = engine
-                        self.context = context
-                        
-                    def forward(self, x):
-                        # Convert input to TensorRT
-                        inp = x.cpu().numpy()
-                        # Execute inference
-                        output = np.empty((1, 3, x.shape[2]*4, x.shape[3]*4), dtype=np.float32)
-                        self.context.execute_v2([inp.ctypes.data, output.ctypes.data])
-                        # Convert back to PyTorch
-                        return torch.from_numpy(output).to(x.device)
-                        
-                model = TRTWrapper(engine, context)
-                print(f"Successfully optimized {model_name} with TensorRT")
-                
-            except Exception as e:
-                print(f"TensorRT optimization failed: {e}")
-                print("Falling back to regular model")
-                
+
         model.eval()
         return model
 
@@ -165,7 +119,7 @@ class Upscale_Machine:
                     raise e
 
         upscale_model.cpu()
-        s = torch.clamp(s, min=0.0, max=1.0) 
+        s = torch.clamp(s, min=0.0, max=1.0)
         return s
 
     def _round_to_modulus(self, value, modulus):
@@ -174,7 +128,7 @@ class Upscale_Machine:
         return max(modulus, int(round(value / modulus)) * modulus)
 
     def upscale(self, image, upscale_model, chained_model="None", rounding_modulus=8, supersample='true',
-                rescale_factor=2.0, use_tensorrt=False):
+                rescale_factor=2.0):
 
         if image.ndim != 4:
             raise ValueError("Expected IMAGE tensor with 4 dims (B,H,W,C).")
@@ -188,7 +142,7 @@ class Upscale_Machine:
 
         # First upscale
         if upscale_model:
-            up_model = self.load_model(upscale_model, use_tensorrt)
+            up_model = self.load_model(upscale_model)
             up_bchw = self.upscale_with_model(up_model, current_bhwc)
             current_bhwc = up_bchw.movedim(1, -1).contiguous()
 
@@ -211,7 +165,8 @@ class Upscale_Machine:
 
         # Second upscale (chained model) if selected
         if chained_model and chained_model != "None":
-            chain_model = self.load_model(chained_model, use_tensorrt)
+            # chained model is a model name
+            chain_model = self.load_model(chained_model)
             chain_bchw = self.upscale_with_model(chain_model, current_bhwc)
             current_bhwc = chain_bchw.movedim(1, -1).contiguous()
 

@@ -51,6 +51,16 @@ It includes:
 
 ---
 
+### 💾 Save Image w/Metadata
+
+- **Single path+filename input:** Provide a single required `path_and_filename` string (examples: `comfy`, `Test/comfy`, `SDXL/Test/comfy`). The last path segment is used as the filename; preceding segments become folders under the ComfyUI output directory.
+- **Supported formats:** PNG, JPEG (saved as .jpg), WEBP (choose with the `extension` dropdown).
+- **Automatic folder creation:** Any missing folders in the provided path are created automatically.
+- **Metadata embedding:** PNG files receive tEXt entries (parameters/prompt). JPEG/WEBP receive EXIF UserComment where possible.
+- **Placeholder resolution:** Filenames and paths accept `%...%` placeholders which are resolved from the node's `prompt` dictionary (best-effort). Example: if `prompt` contains `{"title": "MyTitle"}`, using `%title%/img` will save under `MyTitle/img.png`.
+- **Collision-safe saving:** If a file already exists the node will append `_0001`, `_0002`, ... to the base filename to avoid overwriting.
+
+
 ## 📦 Installation
 
 1. Clone or download this repository into your ComfyUI `custom_nodes` directory:
@@ -130,6 +140,31 @@ It includes:
 
 ---
 
+### 💾 Save Image w/Metadata — Inputs & Outputs
+
+| Name               | Type    | Description |
+|--------------------|---------|-------------|
+| `path_and_filename`| STRING  | Single required path + filename string. Examples: `comfy`, `Test/comfy`, `SDXL/Test/comfy`. The last segment is used as filename (extension ignored); preceding segments are folder path under ComfyUI output directory. |
+| `extension`        | STRING  | File format dropdown: `png`, `jpeg`, `webp`. |
+| `custom_string`    | STRING  | Optional custom text to embed in metadata. |
+| `quality_jpeg_or_webp` | INT | JPEG/WEBP quality (1-100). |
+| `lossless_webp`    | BOOLEAN | If true, WEBP will be saved lossless (when supported). |
+
+**Hidden inputs:**
+
+- `prompt` — a dict-like object the node will consult to resolve `%...%` placeholders used in the `path_and_filename` string (best-effort lookup).
+
+**Outputs:**
+
+The node returns no tensor outputs but updates the UI with the list of saved filenames and their subfolders (so ComfyUI will display the saved files in the results panel).
+
+**Behavior notes & examples:**
+
+- If `path_and_filename` is `comfy` and `extension` is `png`, the node saves `OUTPUT_DIR/comfy.png` (or `comfy_0001.png` if it already exists).
+- If `path_and_filename` is `SDXL/Test/comfy`, the node creates `OUTPUT_DIR/SDXL/Test/` if missing and saves `comfy.<ext>` inside it.
+- You may use placeholders in `path_and_filename`, for example `%title%/img`, which will be resolved from the `prompt` dict when possible.
+
+
 ## 📝 License
 
 MIT License
@@ -139,6 +174,3 @@ MIT License
 ## 🔗 Links
 
 - [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
-- [SATA Utility Node GitHub](https://github.com/SatadalAI/SATA_UtilityNode)
- - [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
- - [SATA Utility Node GitHub](https://github.com/SatadalAI/SATA_UtilityNode)

@@ -5,7 +5,7 @@ from server import PromptServer
 from aiohttp import web
 
 # Directory for CSV files (adjust if needed)
-CSV_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+CSV_DIR = os.path.join(os.path.dirname(__file__), "..", "asset")
 
 def list_csv_files():
     try:

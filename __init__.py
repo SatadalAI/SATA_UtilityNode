@@ -1,22 +1,28 @@
-from .nodes.upscale_machine import Upscale_Machine
+# __init__.py
+
+# Import all the node classes from the nodes directory
 from .nodes.prompt_machine import Prompt_Machine
 from .nodes.resolution_machine import Resolution_Machine
 from .nodes.save_image_metadata import ImageSaveWithMetadata
+from .nodes.upscale_machine import Upscale_Machine
 
+# A dictionary that maps class names to class objects
 NODE_CLASS_MAPPINGS = {
-    "Upscale_Machine": Upscale_Machine,
     "Prompt_Machine": Prompt_Machine,
     "Resolution_Machine": Resolution_Machine,
-    "Save_Image_Metadata": ImageSaveWithMetadata,
+    "ImageSaveWithMetadata": ImageSaveWithMetadata,
+    "Upscale_Machine": Upscale_Machine,
 }
 
+# A dictionary that maps display names to class names
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Upscale_Machine": "Upscale Machine",
-    "Prompt_Machine": "Prompt Machine",
-    "Resolution_Machine": "Resolution Machine",
-    "Save_Image_Metadata": "Save Image Metadata",
+    "Prompt Machine": "Prompt_Machine",
+    "Resolution Machine": "Resolution_Machine",
+    "Save Image w/Metadata": "ImageSaveWithMetadata",
+    "Upscale Machine": "Upscale_Machine",
 }
 
-WEB_DIRECTORY = "./web"
+# A dictionary that contains web directory information
+WEB_DIRECTORY = "./js"
 
-__all__ = ["WEB_DIRECTORY", "NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']

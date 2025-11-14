@@ -7,7 +7,7 @@ NODE_NAME = "Resolution_Machine"
 
 # Path to JSON config (root of SATA_UtilityNode folder)
 CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "resolutions.json"
+    os.path.dirname(os.path.dirname(__file__)), "asset","resolutions.json"
 )
 
 def load_config():

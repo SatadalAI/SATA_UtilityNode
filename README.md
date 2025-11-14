@@ -16,6 +16,7 @@ It includes:
 - **Prompt Machine:** Easy prompt selection from a CSV for positive/negative prompt workflows.
 - **Touchpad Pan & Zoom:** Seamless navigation for large images in the ComfyUI preview panel.
 - **Resolution Machine:** Quick selection of model-specific image resolutions for popular models.
+- **Save Image w/Metadata:** saving images with meta data and with different file formats.
 
 ---
 
@@ -100,29 +101,31 @@ It includes:
 
 ---
 
-### Prompt Machine
+### 💬 Prompt Machine
+
+Loads positive and negative prompts from a `prompts.csv` file, allowing you to quickly switch between predefined prompt sets in your workflow.
 
 | Name        | Type   | Description                        |
 |-------------|--------|------------------------------------|
 | `selection` | STRING | Prompt set name from CSV           |
 
 **Outputs:**
-
 | Name        | Type   | Description                        |
 |-------------|--------|------------------------------------|
 | `positive`  | STRING | Positive prompt                    |
 | `negative`  | STRING | Negative prompt                    |
 
 ---
-
-### Touchpad Pan & Zoom
-
-- **No node configuration required.**  
-- Enables pan/zoom in the ComfyUI preview panel for large images.
+ 
+### 🖱️ Touchpad Pan & Zoom
+ 
+A UI enhancement that enables smooth, intuitive touchpad-based panning and zooming on images in the ComfyUI preview panel. No node configuration is required—it works automatically.
 
 ---
 
-### Resolution Machine
+### 📏 Resolution Machine
+
+Provides dropdowns to quickly select recommended resolutions for popular models like SDXL, Pony, SD3, and more. Selecting a preset auto-populates width and height, but you can also set them manually.
 
 | Name         | Type   | Description                                      |
 |--------------|--------|--------------------------------------------------|
@@ -132,38 +135,31 @@ It includes:
 | `height`     | INT    | Image height (can be set manually)               |
 
 **Outputs:**
-
 | Name     | Type | Description                |
 |----------|------|----------------------------|
 | `width`  | INT  | Final image width          |
 | `height` | INT  | Final image height         |
 
 ---
+ 
+### 💾 Save Image w/Metadata
+ 
+An advanced image saving node with dynamic pathing, metadata embedding, and filename collision avoidance.
 
-### 💾 Save Image w/Metadata — Inputs & Outputs
-
-| Name               | Type    | Description |
-|--------------------|---------|-------------|
-| `path_and_filename`| STRING  | Single required path + filename string. Examples: `comfy`, `Test/comfy`, `SDXL/Test/comfy`. The last segment is used as filename (extension ignored); preceding segments are folder path under ComfyUI output directory. |
-| `extension`        | STRING  | File format dropdown: `png`, `jpeg`, `webp`. |
-| `custom_string`    | STRING  | Optional custom text to embed in metadata. |
-| `quality_jpeg_or_webp` | INT | JPEG/WEBP quality (1-100). |
-| `lossless_webp`    | BOOLEAN | If true, WEBP will be saved lossless (when supported). |
-
-**Hidden inputs:**
-
-- `prompt` — a dict-like object the node will consult to resolve `%...%` placeholders used in the `path_and_filename` string (best-effort lookup).
-
-**Outputs:**
-
-The node returns no tensor outputs but updates the UI with the list of saved filenames and their subfolders (so ComfyUI will display the saved files in the results panel).
-
-**Behavior notes & examples:**
-
-- If `path_and_filename` is `comfy` and `extension` is `png`, the node saves `OUTPUT_DIR/comfy.png` (or `comfy_0001.png` if it already exists).
-- If `path_and_filename` is `SDXL/Test/comfy`, the node creates `OUTPUT_DIR/SDXL/Test/` if missing and saves `comfy.<ext>` inside it.
-- You may use placeholders in `path_and_filename`, for example `%title%/img`, which will be resolved from the `prompt` dict when possible.
-
+| Name                   | Type    | Description                                                                                                                                                             |
+|------------------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `path_and_filename`    | STRING  | Path and filename string (e.g., `MyRenders/character`). The last segment is the filename; preceding segments are folders under the ComfyUI `output` directory.             |
+| `extension`            | STRING  | File format: `png`, `jpeg`, `webp`.                                                                                                                                     |
+| `custom_string`        | STRING  | Optional custom text to embed in metadata.                                                                                                                              |
+| `quality_jpeg_or_webp` | INT     | Quality for JPEG/WEBP formats (1-100).                                                                                                                                  |
+| `lossless_webp`        | BOOLEAN | If true, saves WEBP files losslessly.                                                                                                                                   |
+| `prompt` (hidden)      | DICT    | Workflow data used to resolve `%...%` placeholders in the filename (e.g., `%sampler_name%`).                                                                              |
+ 
+**Key Behaviors:**
+- **Dynamic Paths:** Automatically creates any missing folders in your specified path.
+- **Metadata:** Embeds workflow data into PNG (tEXt), JPEG (EXIF), and WEBP (EXIF) files.
+- **Collision Safe:** Prevents overwrites by appending a number (e.g., `image_0001.png`) if the filename already exists.
+- **UI Output:** Returns a list of saved files to the ComfyUI manager/preview panel.
 
 ## 📝 License
 

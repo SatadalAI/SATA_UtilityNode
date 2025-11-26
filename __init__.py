@@ -5,6 +5,7 @@ from .nodes.prompt_machine import Prompt_Machine
 from .nodes.resolution_machine import Resolution_Machine
 from .nodes.save_image_metadata import ImageSaveWithMetadata
 from .nodes.upscale_machine import Upscale_Machine
+from .nodes.prompt_autocomplete import PromptAutocomplete
 
 # A dictionary that maps class names to class objects
 NODE_CLASS_MAPPINGS = {
@@ -12,6 +13,7 @@ NODE_CLASS_MAPPINGS = {
     "Resolution_Machine": Resolution_Machine,
     "ImageSaveWithMetadata": ImageSaveWithMetadata,
     "Upscale_Machine": Upscale_Machine,
+    "PromptAutocomplete": PromptAutocomplete,
 }
 
 # A dictionary that maps display names to class names
@@ -20,6 +22,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Resolution Machine": "Resolution_Machine",
     "Save Image w/Metadata": "ImageSaveWithMetadata",
     "Upscale Machine": "Upscale_Machine",
+    "Prompt Autocomplete": "PromptAutocomplete",
 }
 
 # A dictionary that contains web directory information

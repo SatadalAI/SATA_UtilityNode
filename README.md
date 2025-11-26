@@ -1,7 +1,7 @@
 # SATA Utility Node Suite for ComfyUI
 
 **Author:** Satadal  
-**Version:** 1.0  
+**Version:** 1.2.0  
 **License:** MIT  
 **Repository:** https://github.com/SatadalAI/SATA_UtilityNode
 
@@ -17,6 +17,7 @@ It includes:
 - **Touchpad Pan & Zoom:** Seamless navigation for large images in the ComfyUI preview panel.
 - **Resolution Machine:** Quick selection of model-specific image resolutions for popular models.
 - **Save Image w/Metadata:** saving images with meta data and with different file formats.
+- **Prompt Autocomplete:** Text widget with autocompletion, random selection, and preview capabilities.
 
 ---
 
@@ -61,6 +62,14 @@ It includes:
 - **Placeholder resolution:** Filenames and paths accept `%...%` placeholders which are resolved from the node's `prompt` dictionary (best-effort). Example: if `prompt` contains `{"title": "MyTitle"}`, using `%title%/img` will save under `MyTitle/img.png`.
 - **Collision-safe saving:** If a file already exists the node will append `_0001`, `_0002`, ... to the base filename to avoid overwriting.
 
+### ✍️ Prompt Autocomplete
+
+- **Autocompletion:** Type `#` (configurable) to trigger a popup with suggestions from CSV/JSON files in the `prompt` folder.
+- **Random Selection:** Select `🎲 Random` to insert a random item from a category.
+- **Preview:** View full text of long snippets before inserting.
+- **Global Mode:** Optional setting to enable autocompletion on ALL text widgets in ComfyUI.
+- **Custom Data:** Add your own `.csv` or `.json` files to the `prompt` folder to extend the library.
+
 
 ## 📦 Installation
 
@@ -80,86 +89,9 @@ It includes:
 
 ---
 
-## 📚 Node Inputs & Outputs
-
-### Upscale Machine
-
-| Name             | Type   | Description                                      |
-|------------------|--------|--------------------------------------------------|
-| `image`          | IMAGE  | Input image tensor                               |
-| `upscale_model`  | STRING | Model filename from `upscale_models` folder      |
-| `rescale_factor` | FLOAT  | Scaling factor (aspect ratio preserved)          |
-| `supersample`    | STRING | `"true"` or `"false"`                            |
-| `rounding_modulus` | INT  | Ensures dimensions are divisible by this value   |
-
-**Outputs:**
-
-| Name        | Type   | Description                        |
-|-------------|--------|------------------------------------|
-| `IMAGE`     | IMAGE  | The upscaled and resized image     |
-| `show_help` | STRING | Link to documentation/help         |
-
----
-
-### 💬 Prompt Machine
-
-Loads positive and negative prompts from a `prompts.csv` file, allowing you to quickly switch between predefined prompt sets in your workflow.
-
-| Name        | Type   | Description                        |
-|-------------|--------|------------------------------------|
-| `selection` | STRING | Prompt set name from CSV           |
-
-**Outputs:**
-| Name        | Type   | Description                        |
-|-------------|--------|------------------------------------|
-| `positive`  | STRING | Positive prompt                    |
-| `negative`  | STRING | Negative prompt                    |
-
----
- 
-### 🖱️ Touchpad Pan & Zoom
- 
-A UI enhancement that enables smooth, intuitive touchpad-based panning and zooming on images in the ComfyUI preview panel. No node configuration is required—it works automatically.
-
----
-
-### 📏 Resolution Machine
-
-Provides dropdowns to quickly select recommended resolutions for popular models like SDXL, Pony, SD3, and more. Selecting a preset auto-populates width and height, but you can also set them manually.
-
-| Name         | Type   | Description                                      |
-|--------------|--------|--------------------------------------------------|
-| `model`      | STRING | Model name (select from supported models)        |
-| `resolution` | STRING | Resolution preset name (auto-populates size)     |
-| `width`      | INT    | Image width (can be set manually)                |
-| `height`     | INT    | Image height (can be set manually)               |
-
-**Outputs:**
-| Name     | Type | Description                |
-|----------|------|----------------------------|
-| `width`  | INT  | Final image width          |
-| `height` | INT  | Final image height         |
-
----
- 
-### 💾 Save Image w/Metadata
- 
-An advanced image saving node with dynamic pathing, metadata embedding, and filename collision avoidance.
-
-| Name                   | Type    | Description                                                                                                                                                             |
-|------------------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `path_and_filename`    | STRING  | Path and filename string (e.g., `MyRenders/character`). The last segment is the filename; preceding segments are folders under the ComfyUI `output` directory.             |
-| `extension`            | STRING  | File format: `png`, `jpeg`, `webp`.                                                                                                                                     |
-| `custom_string`        | STRING  | Optional custom text to embed in metadata.                                                                                                                              |
-| `quality_jpeg_or_webp` | INT     | Quality for JPEG/WEBP formats (1-100).                                                                                                                                  |
-| `lossless_webp`        | BOOLEAN | If true, saves WEBP files losslessly.                                                                                                                                   |
-| `prompt` (hidden)      | DICT    | Workflow data used to resolve `%...%` placeholders in the filename (e.g., `%sampler_name%`).                                                                              |
- 
-**Key Behaviors:**
-- **Dynamic Paths:** Automatically creates any missing folders in your specified path.
-- **Metadata:** Embeds workflow data into PNG (tEXt), JPEG (EXIF), and WEBP (EXIF) files.
-- **Collision Safe:** Prevents overwrites by appending a number (e.g., `image_0001.png`) if the filename already exists.
-- **UI Output:** Returns a list of saved files to the ComfyUI manager/preview panel.
+**Settings:**
+- **Trigger Character:** Change the character that opens the popup (default: `#`).
+- **Global Mode:** Enable autocompletion for all text widgets in ComfyUI (default: `false`).
 
 ## 📝 License
 

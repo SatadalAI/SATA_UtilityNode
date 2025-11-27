@@ -34,7 +34,7 @@ app.registerExtension({
                 const resp = await fetch(`/sata/prompt_machine/names?csv=${encodeURIComponent(csvValue)}`);
                 const data = await resp.json();
                 namesConfig = data.names || ["None"];
-                console.log("[PromptMachineFrontend] Loaded names:", namesConfig);
+
                 refreshNames();
             } catch (err) {
                 console.error("[PromptMachineFrontend] Failed to load names:", err);

@@ -70,7 +70,7 @@ class Resolution_Machine:
             entry = resolutions[resolution]
             width, height = entry["width"], entry["height"]
 
-        print(f"[{NODE_NAME}] Model={model}, Resolution={resolution}, Output=({width}, {height})")
+
         return (width, height)
 
 

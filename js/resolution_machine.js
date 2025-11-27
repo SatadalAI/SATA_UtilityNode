@@ -25,7 +25,7 @@ app.registerExtension({
             try {
                 const resp = await fetch("/SATA_UtilityNode/resolutions_config");
                 resolutionsConfig = await resp.json();
-                console.log("[Resolution_Machine] Loaded config:", resolutionsConfig);
+
             } catch (err) {
                 console.error("[Resolution_Machine] Failed to load config:", err);
             }
@@ -46,7 +46,7 @@ app.registerExtension({
                 resolutionWidget.value = available[0];
             }
 
-            console.log(`[Resolution_Machine] Resolutions for ${selectedModel}:`, available);
+
             app.graph.change();
             applyResolution(); // auto-apply width/height on refresh
         }

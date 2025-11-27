@@ -1,7 +1,7 @@
 # SATA Utility Node Suite for ComfyUI
 
 **Author:** Satadal  
-**Version:** 1.2.0  
+**Version:** 1.5.0  
 **License:** MIT  
 **Repository:** https://github.com/SatadalAI/SATA_UtilityNode
 
@@ -18,6 +18,7 @@ It includes:
 - **Resolution Machine:** Quick selection of model-specific image resolutions for popular models.
 - **Save Image w/Metadata:** saving images with meta data and with different file formats.
 - **Prompt Autocomplete:** Text widget with autocompletion, random selection, and preview capabilities.
+- **Latent Machine:** Advanced noise generation for creating empty latents initialized with specific noise patterns instead of standard Gaussian noise.
 
 ---
 
@@ -30,7 +31,6 @@ It includes:
 - **CPU-based Rescaling:** Efficient resizing using OpenCV.
 - **Supersampling:** Optional detail preservation for downscaling/fractional resizing.
 - **Rounding Modulus:** Ensures output dimensions align with model/UI constraints.
-- **Dual Output:** Returns both the processed image and a help/documentation link.
 
 ### 💬 Prompt Machine
 
@@ -69,6 +69,18 @@ It includes:
 - **Preview:** View full text of long snippets before inserting.
 - **Global Mode:** Optional setting to enable autocompletion on ALL text widgets in ComfyUI.
 - **Custom Data:** Add your own `.csv` or `.json` files to the `prompt` folder to extend the library.
+
+### 🌌 Latent Machine
+
+- **Advanced Noise Generation:** Create empty latents initialized with specific noise patterns instead of standard Gaussian noise.
+- **Noise Types:**
+    - **Gaussian (White):** Standard noise, good for sharp details.
+    - **Pink (1/f):** Balanced noise, great for photorealism and nature.
+    - **Brown (1/f²):** Smoother noise, ideal for backgrounds and anime.
+    - **Perlin:** Cloud-like structure, perfect for landscapes and fluids.
+    - **Plasma:** Very smooth, abstract blobs for sci-fi and alien terrains.
+- **Model Support:** Select between **4-channel** (SD1.5, SDXL, etc.) and **16-channel** (Flux, SD3) latents.
+- **Reproducibility:** Full seed support for consistent noise generation.
 
 
 ## 📦 Installation

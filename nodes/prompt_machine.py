@@ -121,9 +121,9 @@ class Prompt_Machine:
     CATEGORY = "SATA_UtilityNode"
 
     def get_prompts(self, csv_file, name, positive_preview=None, negative_preview=None, note_preview=None):
-        print(f"[PromptMachine] get_prompts - csv_file={csv_file}, name={name}")
+
         pos, neg, note = read_prompt_row(csv_file, name)
-        print(f"[PromptMachine] get_prompts -> pos_len={len(pos)}, neg_len={len(neg)}, note_len={len(note)}")
+
         return (pos, neg, note)
 
 

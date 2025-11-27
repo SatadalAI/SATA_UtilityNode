@@ -3,7 +3,7 @@ import { app } from "../../../scripts/app.js";
 // Register extension
 app.registerExtension({
     name: "SATA_UtilityNode.PromptAutocomplete",
-    
+
     async setup() {
         // Add settings
         app.ui.settings.addSetting({
@@ -59,7 +59,7 @@ app.registerExtension({
                 const contentData = await contentResp.json();
                 this.snippetsCache[file] = contentData.items || [];
             }
-            console.log("[PromptAutocomplete] Loaded snippets:", Object.keys(this.snippetsCache));
+
         } catch (err) {
             console.error("[PromptAutocomplete] Failed to load snippets:", err);
         }
@@ -77,12 +77,12 @@ app.registerExtension({
         // Hook into the input element creation/usage
         // NOTE: ComfyUI's customtext widget often creates a textarea. 
         // We can try to find the textarea in the DOM if it's active, or hook the input callback.
-        
+
         // A more robust way for ComfyUI widgets:
         // The widget has an `inputEl` property if it's a DOM widget.
-        
+
         // Let's try to hook the `inputEl` if it exists, or wait for it.
-        
+
         // Helper to setup the listener
         function setupListener(input) {
             if (input.dataset.hasAutocomplete) return;
@@ -99,7 +99,7 @@ app.registerExtension({
             // If not, it might be created later. We can hook `onInput` or similar, 
             // but `inputEl` is usually created when the node is drawn or added.
             // Let's poll or hook draw? Hooking draw is safer to catch it.
-             widget.draw = function(ctx, node, widgetWidth, y, widgetHeight) {
+            widget.draw = function (ctx, node, widgetWidth, y, widgetHeight) {
                 const result = originalDraw?.apply(this, arguments);
                 if (this.inputEl) {
                     setupListener(this.inputEl);
@@ -110,7 +110,7 @@ app.registerExtension({
     },
 
     // --- Autocomplete Logic ---
-    
+
     popup: null,
     active: false,
     currentCategory: null, // null = showing categories, string = showing items
@@ -127,7 +127,7 @@ app.registerExtension({
 
         // Simple check: is the character before cursor the trigger?
         // Or are we in a "trigger session"?
-        
+
         // If we just typed the trigger
         if (e.data === trigger) {
             this.showPopup(input, cursor);
@@ -144,11 +144,11 @@ app.registerExtension({
             }
 
             const query = val.substring(lastTriggerIndex + 1, cursor);
-            
+
             // Check if we have a category selected (format: #category:query)
             // But wait, the plan said: Select Category -> Then Items.
             // So maybe we just filter categories first.
-            
+
             if (this.currentCategory) {
                 // We are inside a category
                 // Check if the query contains the category prefix? 
@@ -161,17 +161,17 @@ app.registerExtension({
                 // But how do we represent that in text? 
                 // Maybe we don't change text, just internal state?
                 // Standard way: #category:item
-                
+
                 // Let's parse the text to see where we are.
                 // If text is "#cat", we filter categories.
                 // If text is "#cat:ite", we filter items in "cat".
-                
+
                 const parts = query.split(":");
                 if (parts.length > 1) {
                     // We have a category selected
                     const catName = parts[0];
                     const itemQuery = parts.slice(1).join(":"); // rest is item query
-                    
+
                     // Check if catName is valid
                     if (this.snippetsCache[catName + ".csv"] || this.snippetsCache[catName + ".json"] || this.snippetsCache[catName]) {
                         // It's a valid category (roughly). 
@@ -184,7 +184,7 @@ app.registerExtension({
                         }
                     }
                 }
-                
+
                 // If no colon, or invalid category, we are filtering categories
                 this.currentCategory = null;
                 this.updateCategories(query);
@@ -192,17 +192,17 @@ app.registerExtension({
             } else {
                 // No category selected yet
                 // Check for colon
-                 const parts = query.split(":");
-                 if (parts.length > 1) {
-                     // Maybe user typed "style:" manually?
-                     const catName = parts[0];
-                     let key = Object.keys(this.snippetsCache).find(k => k.replace(/\.(csv|json)$/, "") === catName);
-                     if (key) {
-                         this.currentCategory = key;
-                         this.updateItems(parts.slice(1).join(":"));
-                         return;
-                     }
-                 }
+                const parts = query.split(":");
+                if (parts.length > 1) {
+                    // Maybe user typed "style:" manually?
+                    const catName = parts[0];
+                    let key = Object.keys(this.snippetsCache).find(k => k.replace(/\.(csv|json)$/, "") === catName);
+                    if (key) {
+                        this.currentCategory = key;
+                        this.updateItems(parts.slice(1).join(":"));
+                        return;
+                    }
+                }
 
                 this.updateCategories(query);
             }
@@ -289,10 +289,10 @@ app.registerExtension({
     updateItems(query) {
         if (!this.currentCategory) return;
         const items = this.snippetsCache[this.currentCategory] || [];
-        
+
         // Filter
         let matches = items.filter(i => i.toLowerCase().includes(query.toLowerCase()));
-        
+
         // Add "Random" option at top
         this.filteredItems = [
             { type: "random", value: "RANDOM", display: "🎲 Random" },
@@ -328,7 +328,7 @@ app.registerExtension({
             if (idx === this.selectedIndex) {
                 div.style.backgroundColor = "#444";
                 div.style.color = "#fff";
-                
+
                 // Show preview if it's a long item
                 if (item.type === "item" && item.value.length > 30) {
                     this.showPreview(item.value);
@@ -341,10 +341,10 @@ app.registerExtension({
                 this.selectedIndex = idx;
                 this.selectItem(this.activeInput); // We need reference to input
             };
-            
+
             this.popup.appendChild(div);
         });
-        
+
         // Keep active input ref
         const activeElement = document.activeElement;
         if (activeElement && activeElement.tagName === "TEXTAREA") {
@@ -370,7 +370,7 @@ app.registerExtension({
             });
             document.body.appendChild(this.previewBox);
         }
-        
+
         this.previewBox.textContent = text;
         const rect = this.popup.getBoundingClientRect();
         this.previewBox.style.left = `${rect.right + 5}px`;
@@ -402,16 +402,16 @@ app.registerExtension({
             this.currentCategory = item.value;
             // Don't close popup, just update to items
             // We need to update the input value first
-            
-             // Replace everything from trigger to cursor with trigger + textToInsert
+
+            // Replace everything from trigger to cursor with trigger + textToInsert
             const before = val.substring(0, lastTriggerIndex + 1); // includes trigger
             const after = val.substring(cursor);
             input.value = before + textToInsert + after;
-            
+
             // Move cursor
             const newCursor = lastTriggerIndex + 1 + textToInsert.length;
             input.setSelectionRange(newCursor, newCursor);
-            
+
             // Trigger input event manually to update state
             this.handleInput({ data: null }, input, null);
             return;
@@ -430,13 +430,13 @@ app.registerExtension({
         // Replace
         const before = val.substring(0, lastTriggerIndex); // remove trigger
         const after = val.substring(cursor);
-        
+
         // If we are replacing a category query like #style:something, we need to find the start of #
         // Actually, if we are in item mode, the text is "#style:query".
         // We want to replace the whole "#style:query" with "textToInsert".
-        
+
         input.value = before + textToInsert + after;
-        
+
         // Move cursor
         const newCursor = before.length + textToInsert.length;
         input.setSelectionRange(newCursor, newCursor);

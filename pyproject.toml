@@ -1,14 +1,27 @@
 [project]
-name = "comfyui_sata_utilitynode"
-description = "ComfyUI utility nodes collection providing features like prompt machine, resolution machine, and upscale machine to enhance workflow efficiency."
-version = "1.5.0"
-license = "MIT"
+name = "sata_utilitynode"
+version = "1.0.0"
+description = "A collection of utility nodes including image upscale, touchpad support and CSV-driven prompt machine for ComfyUI."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+dependencies = [
+  "opencv-python>=4.5.0",
+  "spandrel",
+  "onnx>=1.12.0",
+] 
 
 [project.urls]
 Repository = "https://github.com/SatadalAI/SATA_UtilityNode"
-#  Used by Comfy Registry https://comfyregistry.org
+Documentation = "https://github.com/SatadalAI/SATA_UtilityNode/wiki"
+"Bug Tracker" = "https://github.com/SatadalAI/SATA_UtilityNode/issues"
 
 [tool.comfy]
-PublisherId = "SatadalAI"
+# Replace with the publisher id you create on https://registry.comfy.org (the part after the @)
+PublisherId = ""
 DisplayName = "SATA_UtilityNode"
 Icon = ""
+# Adjust includes to point to the files/folders that should be published (examples: "nodes/*", "sata_utilitynode/*")
+includes = ["sata_utilitynode/*"]
+# Optional: minimum ComfyUI version
+# requires-comfyui = ">=1.0.0"

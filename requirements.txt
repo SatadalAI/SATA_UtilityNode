@@ -1,5 +1,3 @@
 opencv-python>=4.5.0
 spandrel
-nvidia-tensorrt>=8.0
-onnx>=1.12.0
-onnxruntime-gpu>=1.12.0
+piexif

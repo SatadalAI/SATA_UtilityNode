@@ -1,7 +1,0 @@
-﻿name,positive,negative,note
-Photon1,,"cartoon, painting, illustration, (worst quality, low quality, normal quality:2)",sd1.5
-RealVis,"RAW photo, subject, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3","(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4), (deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, disconnected limbs, mutation, mutated, ugly, disgusting, amputation, UnrealisticDream",sd1.5
-RevAnime,"((best quality)), ((masterpiece)), (detailed) ",,sd1.5
-ilustmix,"masterpiece, best quality, amazing quality, very aesthetic, detailed eyes, perfect eyes, realistic eyes",,Sampler: Euler a Steps: 25
-WAI,"masterpiece,best quality,","bad quality,worst quality,worst detail,",Steps: 15-30 CFG scale: 5-7 Sampler: Euler a
-Plantmink_walnut,"masterpiece, best quality",," Euler or Euler a or HeunPP2 or Restart sampler, 3 or ~3-6 cfg, ~28 steps"

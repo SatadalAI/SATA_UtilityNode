@@ -7,7 +7,7 @@ NODE_NAME = "Resolution_Machine"
 
 # Path to JSON config (root of SATA_UtilityNode folder)
 CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "resolutions.json"
+    os.path.dirname(os.path.dirname(__file__)), "asset","resolutions.json"
 )
 
 def load_config():
@@ -40,6 +40,9 @@ class Resolution_Machine:
                 "resolution": (resolutions, {"default": default_resolution}),
                 "custom_width": ("INT", {"default": 512, "min": 1, "max": 8192}),
                 "custom_height": ("INT", {"default": 512, "min": 1, "max": 8192}),
+            },
+            "optional": {
+                "dimension_preview": ("STRING", {"multiline": False, "forceInput": False, "default": ""}),
             }
         }
 
@@ -48,7 +51,7 @@ class Resolution_Machine:
     FUNCTION = "get_resolution"
     CATEGORY = "SATA_UtilityNode"
 
-    def get_resolution(self, model, resolution, custom_width, custom_height):
+    def get_resolution(self, model, resolution, custom_width, custom_height, dimension_preview=None):
         config = load_config()
 
         if model not in config:
@@ -67,7 +70,7 @@ class Resolution_Machine:
             entry = resolutions[resolution]
             width, height = entry["width"], entry["height"]
 
-        print(f"[{NODE_NAME}] Model={model}, Resolution={resolution}, Output=({width}, {height})")
+
         return (width, height)
 
 

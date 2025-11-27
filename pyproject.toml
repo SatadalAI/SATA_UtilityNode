@@ -35,3 +35,16 @@ Icon = ""
 includes = [] 
 # "requires-comfyui" = ">=1.0.0"  # ComfyUI version compatibility
 
+name = "comfyui_sata_utilitynode"
+description = "ComfyUI utility nodes collection providing features like prompt machine, resolution machine, and upscale machine to enhance workflow efficiency."
+version = "1.5.0"
+license = "MIT"
+
+[project.urls]
+Repository = "https://github.com/SatadalAI/SATA_UtilityNode"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "SatadalAI"
+DisplayName = "SATA_UtilityNode"
+Icon = ""

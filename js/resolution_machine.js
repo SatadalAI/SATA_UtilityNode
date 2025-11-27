@@ -77,21 +77,70 @@ app.registerExtension({
             app.graph.change();
         }
 
+        // --- Preview Logic ---
+        const previewWidget = node.widgets.find(w => w.name === "dimension_preview");
+
+        function updatePreview() {
+            if (!previewWidget) return;
+            const w = widthWidget.value;
+            const h = heightWidget.value;
+            previewWidget.value = `${w} x ${h}`;
+        }
+
         // --- Hook model change ---
         const oldModelCallback = modelWidget.callback;
-        modelWidget.callback = function(value) {
+        modelWidget.callback = function (value) {
             if (oldModelCallback) oldModelCallback(value);
             refreshResolutions(value);
         };
 
         // --- Hook resolution change ---
         const oldResolutionCallback = resolutionWidget.callback;
-        resolutionWidget.callback = function(value) {
+        resolutionWidget.callback = function (value) {
             if (oldResolutionCallback) oldResolutionCallback(value);
             applyResolution();
         };
 
+        // Hook width/height changes for preview
+        const oldWidthCallback = widthWidget.callback;
+        widthWidget.callback = function (value) {
+            if (oldWidthCallback) oldWidthCallback(value);
+            updatePreview();
+        };
+        const oldHeightCallback = heightWidget.callback;
+        heightWidget.callback = function (value) {
+            if (oldHeightCallback) oldHeightCallback(value);
+            updatePreview();
+        };
+
+        // --- Add Swap Button ---
+        node.addWidget("button", "Swap Dimensions", null, () => {
+            const w = widthWidget.value;
+            const h = heightWidget.value;
+
+            // Swap values
+            widthWidget.value = h;
+            heightWidget.value = w;
+
+            // Force "Custom (manual)" to prevent preset overwrite
+            if (resolutionWidget.value !== "Custom (manual)") {
+                // Check if "Custom (manual)" exists in options
+                if (!resolutionWidget.options.values.includes("Custom (manual)")) {
+                    resolutionWidget.options.values.push("Custom (manual)");
+                }
+                resolutionWidget.value = "Custom (manual)";
+
+                // Unlock widgets since we are now in custom mode
+                widthWidget.disabled = false;
+                heightWidget.disabled = false;
+            }
+
+            updatePreview();
+            app.graph.change();
+        });
+
         // --- Initial sync ---
         refreshResolutions(modelWidget.value);
+        updatePreview();
     }
 });

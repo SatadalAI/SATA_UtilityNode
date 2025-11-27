@@ -107,6 +107,11 @@ class Prompt_Machine:
                 }),
                 # make 'name' a free text field (STRING) — avoids list validation problems
                 "name": ("STRING", {"default": default_name}),
+            },
+            "optional": {
+                 "positive_preview": ("STRING", {"multiline": True, "forceInput": False, "default": ""}),
+                 "negative_preview": ("STRING", {"multiline": True, "forceInput": False, "default": ""}),
+                 "note_preview": ("STRING", {"multiline": True, "forceInput": False, "default": ""}),
             }
         }
 
@@ -115,7 +120,7 @@ class Prompt_Machine:
     FUNCTION = "get_prompts"
     CATEGORY = "SATA_UtilityNode"
 
-    def get_prompts(self, csv_file, name):
+    def get_prompts(self, csv_file, name, positive_preview=None, negative_preview=None, note_preview=None):
         print(f"[PromptMachine] get_prompts - csv_file={csv_file}, name={name}")
         pos, neg, note = read_prompt_row(csv_file, name)
         print(f"[PromptMachine] get_prompts -> pos_len={len(pos)}, neg_len={len(neg)}, note_len={len(note)}")

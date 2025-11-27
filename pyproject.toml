@@ -1,7 +1,7 @@
 [project]
 name = "sata_utilitynode"
 description = "A collection of utility nodes including image upscale,touchpad support and CSV-driven prompt machine for ComfyUI."
-version = "1.0.0"
+version = "1.5.0"
 license = {file = "LICENSE"} 
 # classifiers = [
 #     # For OS-independent nodes (works on all operating systems)
@@ -20,7 +20,7 @@ license = {file = "LICENSE"}
 #     "Environment :: GPU :: Apple Metal",    # Apple Metal support
 # ]
 
-dependencies = ["opencv-python>=4.5.0", "spandrel", "nvidia-tensorrt>=8.0", "onnx>=1.12.0", "onnxruntime-gpu>=1.12.0"]
+dependencies = ["opencv-python>=4.5.0", "spandrel", "piexif"]
 
 [project.urls]
 Repository = "https://github.com/SatadalAI/SATA_UtilityNode"
@@ -29,22 +29,9 @@ Documentation = "https://github.com/SatadalAI/SATA_UtilityNode/wiki"
 "Bug Tracker" = "https://github.com/SatadalAI/SATA_UtilityNode/issues"
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "SatadalAI"
 DisplayName = "SATA_UtilityNode"
 Icon = ""
 includes = [] 
 # "requires-comfyui" = ">=1.0.0"  # ComfyUI version compatibility
 
-name = "comfyui_sata_utilitynode"
-description = "ComfyUI utility nodes collection providing features like prompt machine, resolution machine, and upscale machine to enhance workflow efficiency."
-version = "1.5.0"
-license = "MIT"
-
-[project.urls]
-Repository = "https://github.com/SatadalAI/SATA_UtilityNode"
-#  Used by Comfy Registry https://comfyregistry.org
-
-[tool.comfy]
-PublisherId = "SatadalAI"
-DisplayName = "SATA_UtilityNode"
-Icon = ""

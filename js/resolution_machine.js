@@ -35,9 +35,17 @@ app.registerExtension({
 
         // --- Utility: refresh resolution dropdown when model changes ---
         function refreshResolutions(selectedModel) {
-            const available = resolutionsConfig[selectedModel]
-                ? Object.keys(resolutionsConfig[selectedModel])
-                : ["Custom (manual)"];
+            let available = [];
+            if (resolutionsConfig.models && resolutionsConfig.models[selectedModel]) {
+                const tiers = resolutionsConfig.models[selectedModel];
+                tiers.forEach(tier => {
+                    if (resolutionsConfig.resolutions && resolutionsConfig.resolutions[tier]) {
+                        available.push(...Object.keys(resolutionsConfig.resolutions[tier]));
+                    }
+                });
+            }
+
+            if (available.length === 0) available = ["Custom (manual)"];
 
             resolutionWidget.options.values = available;
 
@@ -56,9 +64,17 @@ app.registerExtension({
             const selectedModel = modelWidget.value;
             const selectedResolution = resolutionWidget.value;
 
-            if (!resolutionsConfig[selectedModel]) return;
+            if (!resolutionsConfig.resolutions) return;
 
-            const resolutionData = resolutionsConfig[selectedModel][selectedResolution];
+            let resolutionData = null;
+            // Search validation across tiers
+            for (const tierName in resolutionsConfig.resolutions) {
+                const tier = resolutionsConfig.resolutions[tierName];
+                if (tier[selectedResolution]) {
+                    resolutionData = tier[selectedResolution];
+                    break;
+                }
+            }
 
             if (selectedResolution !== "Custom (manual)" && resolutionData) {
                 // Auto-set width/height

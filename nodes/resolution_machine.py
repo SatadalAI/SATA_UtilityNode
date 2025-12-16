@@ -13,7 +13,7 @@ CONFIG_PATH = os.path.join(
 def load_config():
     if not os.path.exists(CONFIG_PATH):
         raise FileNotFoundError(f"[{NODE_NAME}] resolutions.json not found at {CONFIG_PATH}")
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    with open(CONFIG_PATH, "r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 
@@ -23,16 +23,17 @@ class Resolution_Machine:
         config = load_config()
 
         # all models
-        models = list(config.keys())
+        # all models
+        models = list(config["models"].keys())
         default_model = models[0] if models else "Unknown"
 
-        # union of all resolutions across all models
+        # union of all resolutions across all tiers
         all_resolutions = set()
-        for model_res in config.values():
-            all_resolutions.update(model_res.keys())
+        for tier_res in config["resolutions"].values():
+            all_resolutions.update(tier_res.keys())
         resolutions = sorted(list(all_resolutions))
 
-        default_resolution = list(config[default_model].keys())[0]
+        default_resolution = resolutions[0] if resolutions else "Custom (manual)"
 
         return {
             "required": {
@@ -54,21 +55,26 @@ class Resolution_Machine:
     def get_resolution(self, model, resolution, custom_width, custom_height, dimension_preview=None):
         config = load_config()
 
-        if model not in config:
+        if model not in config["models"]:
             raise ValueError(f"[{NODE_NAME}] Unknown model: {model}")
 
-        resolutions = config[model]
+        # Search for resolution string in all tiers
+        resolution_data = None
+        for tier in config["resolutions"].values():
+            if resolution in tier:
+                resolution_data = tier[resolution]
+                break
 
-        if resolution not in resolutions:
-            # fallback to first available resolution for safety
-            resolution = list(resolutions.keys())[0]
-            print(f"[{NODE_NAME}] Warning: invalid resolution, defaulting to {resolution}")
+        if not resolution_data:
+            # fallback to custom if not found
+            print(f"[{NODE_NAME}] Warning: resolution '{resolution}' not found in definitions, defaulting to Custom")
+            resolution = "Custom (manual)"
+            resolution_data = {"width": 0, "height": 0}
 
         if resolution == "Custom (manual)":
             width, height = custom_width, custom_height
         else:
-            entry = resolutions[resolution]
-            width, height = entry["width"], entry["height"]
+            width, height = resolution_data["width"], resolution_data["height"]
 
 
         return (width, height)

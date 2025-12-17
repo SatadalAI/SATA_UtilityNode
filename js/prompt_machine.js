@@ -19,10 +19,16 @@ app.registerExtension({
         const index = node.widgets.indexOf(oldNameWidget);
         node.widgets.splice(index, 1);
 
-        // Add proper dropdown
+        // Add proper dropdown (this appends to the end)
         const nameWidget = node.addWidget("combo", "name", "None", () => { }, {
             values: ["None"]
         });
+        
+        // Move the new widget back to the original position
+        // Remove from the end (where addWidget put it)
+        node.widgets.splice(node.widgets.indexOf(nameWidget), 1);
+        // Insert at the correct index
+        node.widgets.splice(index, 0, nameWidget);
 
         // Store available names
         let namesConfig = [];

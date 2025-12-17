@@ -19,8 +19,15 @@ class Latent_Machine:
                 "height": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
                 "batch_size": ("INT", {"default": 1, "min": 1, "max": 64}),
                 "model_type": ([
-                    "SD1.5/SDXL/PicsArt/Kolors/Auraflow (4ch)",
-                    "Flux/Qwen/SD3/Lumina (16ch)"
+                    "SD1.5",
+                    "SDXL",
+                    "PicsArt",
+                    "Kolors",
+                    "Auraflow",
+                    "Flux",
+                    "Qwen",
+                    "SD3",
+                    "Lumina"
                 ],),
                 "noise_type": ([
                     "Gaussian (White): Sharp Architecture, Text, intricate mechanics",
@@ -44,7 +51,9 @@ class Latent_Machine:
         random.seed(seed)
         
         # Determine channels based on model type
-        if "16ch" in model_type:
+        sixteen_channel_models = ["Flux", "Qwen", "SD3", "Lumina"]
+        
+        if model_type in sixteen_channel_models:
             c = 16
         else:
             c = 4

@@ -11,22 +11,7 @@ import folder_paths
 import re
 
 
-def parse_name(ckpt_name):
-    path = ckpt_name
-    filename = path.split("/")[-1]
-    filename = filename.split(".")[:-1]
-    filename = ".".join(filename)
-    return filename
 
-
-def calculate_sha256(file_path):
-    sha256_hash = hashlib.sha256()
-
-    with open(file_path, "rb") as f:
-        for byte_block in iter(lambda: f.read(4096), b""):
-            sha256_hash.update(byte_block)
-
-    return sha256_hash.hexdigest()
 
 
 def handle_whitespace(string: str):
@@ -98,7 +83,7 @@ def resolve_placeholders(template: str, prompt=None) -> str:
     return pattern.sub(repl, template)
 
 
-class ImageSaveWithMetadata:
+class Save_Machine:
     def __init__(self):
         self.output_dir = folder_paths.output_directory
 
@@ -107,11 +92,11 @@ class ImageSaveWithMetadata:
         return {
             "required": {
                 "images": ("IMAGE", ),
-                "path_and_filename": ("STRING", {"default": "%time", "multiline": False}),
+                "path_and_filename": ("STRING", {"default": "%time"}),
                 "extension": ((['png', 'jpeg', 'webp']),),
             },
             "optional": {
-                "custom_string": ("STRING", {"default": '', "multiline": True}),
+                "custom_string": ("STRING", {"default": ''}),
                 "lossless_webp": ("BOOLEAN", {"default": True}),
                 "quality_jpeg_or_webp": ("INT", {"default": 100, "min": 1, "max": 100}),
             },

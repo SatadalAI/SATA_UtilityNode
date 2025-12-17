@@ -49,7 +49,9 @@ def read_names_from_csv(filename):
 def read_prompt_row(csv_file, name):
     """Return (positive, negative, note) for a given csv_file and name.
        Matching is whitespace-trimmed and exact on content (case-sensitive by default)."""
-    if not csv_file or csv_file == "None" or not name or name == "None":
+    if not csv_file or not isinstance(csv_file, str) or csv_file == "None":
+        return ("", "", "")
+    if not name or not isinstance(name, str) or name == "None":
         return ("", "", "")
     path = os.path.join(CSV_DIR, csv_file)
     if not os.path.exists(path):
@@ -115,8 +117,8 @@ class Prompt_Machine:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("positive", "negative", "note")
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("positive", "negative")
     FUNCTION = "get_prompts"
     CATEGORY = "SATA_UtilityNode"
 
@@ -124,7 +126,7 @@ class Prompt_Machine:
 
         pos, neg, note = read_prompt_row(csv_file, name)
 
-        return (pos, neg, note)
+        return (pos, neg)
 
 
 # ---------------- REST API ----------------

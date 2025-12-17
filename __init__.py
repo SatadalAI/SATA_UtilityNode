@@ -3,7 +3,7 @@
 # Import all the node classes from the nodes directory
 from .nodes.prompt_machine import Prompt_Machine
 from .nodes.resolution_machine import Resolution_Machine
-from .nodes.save_image_metadata import ImageSaveWithMetadata
+from .nodes.save_machine import Save_Machine
 from .nodes.upscale_machine import Upscale_Machine
 from .nodes.prompt_autocomplete import PromptAutocomplete
 from .nodes.latent_machine import Latent_Machine
@@ -12,7 +12,7 @@ from .nodes.latent_machine import Latent_Machine
 NODE_CLASS_MAPPINGS = {
     "Prompt_Machine": Prompt_Machine,
     "Resolution_Machine": Resolution_Machine,
-    "ImageSaveWithMetadata": ImageSaveWithMetadata,
+    "Save_Machine": Save_Machine,
     "Upscale_Machine": Upscale_Machine,
     "PromptAutocomplete": PromptAutocomplete,
     "Latent_Machine": Latent_Machine,
@@ -22,7 +22,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Prompt Machine": "Prompt_Machine",
     "Resolution Machine": "Resolution_Machine",
-    "Save Image w/Metadata": "ImageSaveWithMetadata",
+    "Save Machine": "Save_Machine",
     "Upscale Machine": "Upscale_Machine",
     "Prompt Autocomplete": "PromptAutocomplete",
     "Latent Machine": "Latent_Machine",

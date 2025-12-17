@@ -96,15 +96,33 @@ app.registerExtension({
         if (widget.inputEl) {
             setupListener(widget.inputEl);
         } else {
-            // If not, it might be created later. We can hook `onInput` or similar, 
-            // but `inputEl` is usually created when the node is drawn or added.
-            // Let's poll or hook draw? Hooking draw is safer to catch it.
-            widget.draw = function (ctx, node, widgetWidth, y, widgetHeight) {
-                const result = originalDraw?.apply(this, arguments);
-                if (this.inputEl) {
-                    setupListener(this.inputEl);
+            // If checking widget.draw:
+            // Standard LiteGraph widgets might not have an instance-level draw method, relying on the class prototype or default.
+            // If we blindly assign widget.draw = ..., we obscure the default behavior (disappearing widget).
+            // So we only wrap if originalDraw exists (or is on the prototype? widget points to instance).
+
+            // Safer approach: check if draw is defined on the instance or try to get it from prototype?
+            // Actually, if we just want to catch inputEl creation, maybe polling is safer for standard widgets
+            // if we suspect they don't have a direct 'draw' method we can wrap nicely.
+
+            if (originalDraw) {
+                widget.draw = function (ctx, node, widgetWidth, y, widgetHeight) {
+                    const result = originalDraw.apply(this, arguments);
+                    if (this.inputEl) {
+                        setupListener(this.inputEl);
+                    }
+                    return result;
                 }
-                return result;
+            } else {
+                // Fallback: poll for inputEl a few times
+                const poll = setInterval(() => {
+                    if (widget.inputEl) {
+                        setupListener(widget.inputEl);
+                        clearInterval(poll);
+                    }
+                }, 200);
+                // Stop polling after 5 seconds to save resources
+                setTimeout(() => clearInterval(poll), 5000);
             }
         }
     },

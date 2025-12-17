@@ -8,11 +8,12 @@ app.registerExtension({
 
         // Find widgets
         const modelWidget = node.widgets.find(w => w.name === "model");
+        const dimensionWidget = node.widgets.find(w => w.name === "dimension");
         const resolutionWidget = node.widgets.find(w => w.name === "resolution");
         const widthWidget = node.widgets.find(w => w.name === "custom_width");
         const heightWidget = node.widgets.find(w => w.name === "custom_height");
 
-        if (!modelWidget || !resolutionWidget || !widthWidget || !heightWidget) {
+        if (!modelWidget || !dimensionWidget || !resolutionWidget || !widthWidget || !heightWidget) {
             console.warn("[Resolution_Machine] Missing widgets, check backend definition.");
             return;
         }
@@ -33,19 +34,36 @@ app.registerExtension({
 
         await loadConfig();
 
-        // --- Utility: refresh resolution dropdown when model changes ---
-        function refreshResolutions(selectedModel) {
+        // --- Utility: refresh resolution dropdown when model/dimension changes ---
+        function refreshResolutions() {
+            const selectedModel = modelWidget.value;
+            const selectedDimension = dimensionWidget.value;
+
             let available = [];
+
             if (resolutionsConfig.models && resolutionsConfig.models[selectedModel]) {
-                const tiers = resolutionsConfig.models[selectedModel];
-                tiers.forEach(tier => {
-                    if (resolutionsConfig.resolutions && resolutionsConfig.resolutions[tier]) {
-                        available.push(...Object.keys(resolutionsConfig.resolutions[tier]));
+                const buckets = resolutionsConfig.models[selectedModel];
+                buckets.forEach(bucket => {
+                    // Check if bucket exists and has the selected dimension
+                    if (resolutionsConfig.resolutions && resolutionsConfig.resolutions[bucket] && resolutionsConfig.resolutions[bucket][selectedDimension]) {
+                        available.push(...Object.keys(resolutionsConfig.resolutions[bucket][selectedDimension]));
                     }
                 });
             }
 
-            if (available.length === 0) available = ["Custom (manual)"];
+            // Always add Custom? Or only via button? The plan implies button adds it or it is a fallback.
+            // But if user wants to select custom again after selecting a preset?
+            // "Custom" option should probably be always available or injected.
+            // Let's keep it clean: presets only. Button forces custom mode.
+            // BUT if we want to get out of custom mode, we select a preset.
+            // If we are in custom mode, "Custom" should be in the list?
+
+            if (available.length === 0) {
+                available.push("Custom");
+            }
+
+            // Preserve "Custom" if it was already there/selected? 
+            // Better to re-build list cleanly.
 
             resolutionWidget.options.values = available;
 
@@ -54,109 +72,103 @@ app.registerExtension({
                 resolutionWidget.value = available[0];
             }
 
-
-            app.graph.change();
-            applyResolution(); // auto-apply width/height on refresh
+            // If we switched to a preset (not Custom), lock fields
+            // If we defaulted to Custom (e.g. empty available), unlock
+            checkCustomMode();
         }
 
-        // --- Utility: apply resolution to width/height ---
-        function applyResolution() {
+        function checkCustomMode() {
+            if (resolutionWidget.value === "Custom") {
+                widthWidget.disabled = false;
+                heightWidget.disabled = false;
+            } else {
+                // Check if selected is actually a preset
+                applyResolutionPreset();
+            }
+            app.graph.change();
+        }
+
+        // --- Utility: apply resolution preset to width/height ---
+        function applyResolutionPreset() {
             const selectedModel = modelWidget.value;
+            const selectedDimension = dimensionWidget.value;
             const selectedResolution = resolutionWidget.value;
 
-            if (!resolutionsConfig.resolutions) return;
+            if (selectedResolution === "Custom") {
+                widthWidget.disabled = false;
+                heightWidget.disabled = false;
+                return;
+            }
 
             let resolutionData = null;
-            // Search validation across tiers
-            for (const tierName in resolutionsConfig.resolutions) {
-                const tier = resolutionsConfig.resolutions[tierName];
-                if (tier[selectedResolution]) {
-                    resolutionData = tier[selectedResolution];
-                    break;
+
+            // Lookup
+            if (resolutionsConfig.models && resolutionsConfig.models[selectedModel]) {
+                const buckets = resolutionsConfig.models[selectedModel];
+                for (const bucket of buckets) {
+                    if (resolutionsConfig.resolutions[bucket] &&
+                        resolutionsConfig.resolutions[bucket][selectedDimension] &&
+                        resolutionsConfig.resolutions[bucket][selectedDimension][selectedResolution]) {
+
+                        resolutionData = resolutionsConfig.resolutions[bucket][selectedDimension][selectedResolution];
+                        break;
+                    }
                 }
             }
 
-            if (selectedResolution !== "Custom (manual)" && resolutionData) {
-                // Auto-set width/height
+            if (resolutionData) {
                 widthWidget.value = resolutionData.width;
                 heightWidget.value = resolutionData.height;
-
-                // Lock fields
                 widthWidget.disabled = true;
                 heightWidget.disabled = true;
             } else {
-                // Allow manual editing
+                // Should not happen if list logic is correct, unless race condition
+                // fallback
                 widthWidget.disabled = false;
                 heightWidget.disabled = false;
             }
-
-            app.graph.change();
-        }
-
-        // --- Preview Logic ---
-        const previewWidget = node.widgets.find(w => w.name === "dimension_preview");
-
-        function updatePreview() {
-            if (!previewWidget) return;
-            const w = widthWidget.value;
-            const h = heightWidget.value;
-            previewWidget.value = `${w} x ${h}`;
         }
 
         // --- Hook model change ---
         const oldModelCallback = modelWidget.callback;
         modelWidget.callback = function (value) {
             if (oldModelCallback) oldModelCallback(value);
-            refreshResolutions(value);
+            refreshResolutions();
+        };
+
+        // --- Hook dimension change ---
+        const oldDimensionCallback = dimensionWidget.callback;
+        dimensionWidget.callback = function (value) {
+            if (oldDimensionCallback) oldDimensionCallback(value);
+            refreshResolutions();
         };
 
         // --- Hook resolution change ---
         const oldResolutionCallback = resolutionWidget.callback;
         resolutionWidget.callback = function (value) {
             if (oldResolutionCallback) oldResolutionCallback(value);
-            applyResolution();
+            checkCustomMode();
         };
 
-        // Hook width/height changes for preview
-        const oldWidthCallback = widthWidget.callback;
-        widthWidget.callback = function (value) {
-            if (oldWidthCallback) oldWidthCallback(value);
-            updatePreview();
-        };
-        const oldHeightCallback = heightWidget.callback;
-        heightWidget.callback = function (value) {
-            if (oldHeightCallback) oldHeightCallback(value);
-            updatePreview();
-        };
+        // --- Add Custom Button ---
+        // Rename "Swap Dimensions" -> "Custom"
+        // Note: Node logic adds this button. Previous JS added it. We are replacing previous JS logic.
 
-        // --- Add Swap Button ---
-        node.addWidget("button", "Swap Dimensions", null, () => {
-            const w = widthWidget.value;
-            const h = heightWidget.value;
+        node.addWidget("button", "Custom", null, () => {
+            // Unlock widgets
+            widthWidget.disabled = false;
+            heightWidget.disabled = false;
 
-            // Swap values
-            widthWidget.value = h;
-            heightWidget.value = w;
-
-            // Force "Custom (manual)" to prevent preset overwrite
-            if (resolutionWidget.value !== "Custom (manual)") {
-                // Check if "Custom (manual)" exists in options
-                if (!resolutionWidget.options.values.includes("Custom (manual)")) {
-                    resolutionWidget.options.values.push("Custom (manual)");
-                }
-                resolutionWidget.value = "Custom (manual)";
-
-                // Unlock widgets since we are now in custom mode
-                widthWidget.disabled = false;
-                heightWidget.disabled = false;
+            // Ensure "Custom" option exists and is selected
+            if (!resolutionWidget.options.values.includes("Custom")) {
+                resolutionWidget.options.values.push("Custom");
             }
+            resolutionWidget.value = "Custom";
 
-            updatePreview();
             app.graph.change();
         });
 
         // --- Initial sync ---
-        refreshResolutions(modelWidget.value);
-        updatePreview();
+        refreshResolutions();
     }
 });

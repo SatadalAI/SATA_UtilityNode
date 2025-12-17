@@ -23,28 +23,28 @@ class Resolution_Machine:
         config = load_config()
 
         # all models
-        # all models
         models = list(config["models"].keys())
         default_model = models[0] if models else "Unknown"
 
-        # union of all resolutions across all tiers
-        all_resolutions = set()
-        for tier_res in config["resolutions"].values():
-            all_resolutions.update(tier_res.keys())
-        resolutions = sorted(list(all_resolutions))
-
-        default_resolution = resolutions[0] if resolutions else "Custom (manual)"
+        # Collect ALL possible resolutions to pass validation
+        all_resolutions = set(["Custom"])
+        if "resolutions" in config:
+            for bucket in config["resolutions"].values():
+                for dim in bucket.values():
+                    all_resolutions.update(dim.keys())
+        
+        # We can't sort mixed types effortlessly if any, but they are strings.
+        # Sorting helps UI consistency if fallback happens, though JS overrides it.
+        resolutions_list = sorted(list(all_resolutions))
 
         return {
             "required": {
                 "model": (models, {"default": default_model}),
-                "resolution": (resolutions, {"default": default_resolution}),
+                "dimension": (["Square", "Portrait", "Landscape"],),
+                "resolution": (resolutions_list,), 
                 "custom_width": ("INT", {"default": 512, "min": 1, "max": 8192}),
                 "custom_height": ("INT", {"default": 512, "min": 1, "max": 8192}),
             },
-            "optional": {
-                "dimension_preview": ("STRING", {"multiline": False, "forceInput": False, "default": ""}),
-            }
         }
 
     RETURN_TYPES = ("INT", "INT")
@@ -52,32 +52,37 @@ class Resolution_Machine:
     FUNCTION = "get_resolution"
     CATEGORY = "SATA_UtilityNode"
 
-    def get_resolution(self, model, resolution, custom_width, custom_height, dimension_preview=None):
+    def get_resolution(self, model, dimension, resolution, custom_width, custom_height):
         config = load_config()
 
         if model not in config["models"]:
             raise ValueError(f"[{NODE_NAME}] Unknown model: {model}")
 
-        # Search for resolution string in all tiers
+        if resolution == "Custom":
+            return (custom_width, custom_height)
+
+        # Search for resolution string in the specific bucket/dimension
+        # Iterate over tiers to find the bucket that has this model?
+        # Actually config["models"][model] gives list of buckets.
+        buckets = config["models"][model]
+        
         resolution_data = None
-        for tier in config["resolutions"].values():
-            if resolution in tier:
-                resolution_data = tier[resolution]
-                break
-
+        for bucket in buckets:
+            # Check if this bucket has the selected dimension
+            if bucket in config["resolutions"]:
+                 if dimension in config["resolutions"][bucket]:
+                     if resolution in config["resolutions"][bucket][dimension]:
+                         resolution_data = config["resolutions"][bucket][dimension][resolution]
+                         break
+        
         if not resolution_data:
-            # fallback to custom if not found
-            print(f"[{NODE_NAME}] Warning: resolution '{resolution}' not found in definitions, defaulting to Custom")
-            resolution = "Custom (manual)"
-            resolution_data = {"width": 0, "height": 0}
+             # Fallback: maybe the user switched model and the resolution is now invalid, or it is custom manual
+             # If "Custom" was passed, we handled it above.
+             # If obscure mismatch, default to custom values provided
+             print(f"[{NODE_NAME}] Warning: resolution '{resolution}' not found for model '{model}' dim '{dimension}', using Custom")
+             return (custom_width, custom_height)
 
-        if resolution == "Custom (manual)":
-            width, height = custom_width, custom_height
-        else:
-            width, height = resolution_data["width"], resolution_data["height"]
-
-
-        return (width, height)
+        return (resolution_data["width"], resolution_data["height"])
 
 
 # --- REST endpoint for frontend config fetch ---

@@ -7,14 +7,14 @@ app.registerExtension({
     async setup() {
         // Add settings
         app.ui.settings.addSetting({
-            id: "SATA.PromptAutocomplete.Trigger",
+            id: "SATA_UtilityNode.PromptAutocomplete.Trigger",
             name: "Prompt Autocomplete Trigger Character",
             type: "text",
             defaultValue: "#",
         });
 
         app.ui.settings.addSetting({
-            id: "SATA.PromptAutocomplete.Global",
+            id: "SATA_UtilityNode.PromptAutocomplete.Global",
             name: "Prompt Autocomplete Global Mode (All Text Widgets)",
             type: "boolean",
             defaultValue: false,
@@ -24,7 +24,7 @@ app.registerExtension({
     async nodeCreated(node) {
         // Check if we should attach to this node
         const isTargetNode = node.comfyClass === "PromptAutocomplete";
-        const isGlobal = app.ui.settings.getSettingValue("SATA.PromptAutocomplete.Global", false);
+        const isGlobal = app.ui.settings.getSettingValue("SATA_UtilityNode.PromptAutocomplete.Global", false);
 
         if (!isTargetNode && !isGlobal) return;
 
@@ -137,7 +137,7 @@ app.registerExtension({
     triggerChar: "#",
 
     handleInput(e, input, widget) {
-        const trigger = app.ui.settings.getSettingValue("SATA.PromptAutocomplete.Trigger", "#");
+        const trigger = app.ui.settings.getSettingValue("SATA_UtilityNode.PromptAutocomplete.Trigger", "#");
         this.triggerChar = trigger;
 
         const val = input.value;

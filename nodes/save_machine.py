@@ -99,6 +99,7 @@ class Save_Machine:
                 "custom_string": ("STRING", {"default": ''}),
                 "lossless_webp": ("BOOLEAN", {"default": True}),
                 "quality_jpeg_or_webp": ("INT", {"default": 100, "min": 1, "max": 100}),
+                "hide_preview": ("BOOLEAN", {"default": True, "label_on": "Hidden", "label_off": "Visible"}),
             },
             "hidden": {
                 "prompt": "PROMPT",
@@ -111,7 +112,7 @@ class Save_Machine:
     CATEGORY = "SATA_UtilityNode"
 
     def save_files(self, images, path_and_filename, extension, custom_string=None,
-                   quality_jpeg_or_webp=100, lossless_webp=True, prompt=None):
+                   quality_jpeg_or_webp=100, lossless_webp=True, hide_preview=True, prompt=None):
         # Resolve placeholders first (uses prompt)
         try:
             resolved = resolve_placeholders(str(path_and_filename), prompt)

@@ -7,6 +7,7 @@ from .nodes.save_machine import Save_Machine
 from .nodes.upscale_machine import Upscale_Machine
 from .nodes.prompt_autocomplete import PromptAutocomplete
 from .nodes.latent_machine import Latent_Machine
+from .nodes.preview_machine import Preview_Machine
 
 # A dictionary that maps class names to class objects
 NODE_CLASS_MAPPINGS = {
@@ -16,6 +17,7 @@ NODE_CLASS_MAPPINGS = {
     "Upscale_Machine": Upscale_Machine,
     "PromptAutocomplete": PromptAutocomplete,
     "Latent_Machine": Latent_Machine,
+    "Preview_Machine": Preview_Machine,
 }
 
 # A dictionary that maps display names to class names
@@ -26,6 +28,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Upscale Machine": "Upscale_Machine",
     "Prompt Autocomplete": "PromptAutocomplete",
     "Latent Machine": "Latent_Machine",
+    "Preview Machine": "Preview_Machine",
 }
 
 # A dictionary that contains web directory information

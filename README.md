@@ -19,6 +19,7 @@ It includes:
 - **Save Image w/Metadata:** saving images with meta data and with different file formats.
 - **Prompt Autocomplete:** Text widget with autocompletion, random selection, and preview capabilities.
 - **Latent Machine:** Advanced noise generation for creating empty latents initialized with specific noise patterns instead of standard Gaussian noise.
+- **Preview Machine:** Privacy-focused image preview node with auto-hide and hover-to-reveal functionality.
 
 ---
 
@@ -81,6 +82,14 @@ It includes:
     - **Plasma:** Very smooth, abstract blobs for sci-fi and alien terrains.
 - **Model Support:** Select between **4-channel** (SD1.5, SDXL, etc.) and **16-channel** (Flux, SD3) latents.
 - **Reproducibility:** Full seed support for consistent noise generation.
+
+### 👁️ Preview Machine
+
+- **Privacy-Focused Preview:** Image preview node that hides content by default.
+- **Hover to Reveal:** Simply hover over the node to temporarily reveal the image.
+- **Auto-Hide:** Image automatically hides again when you move the mouse away.
+- **Global Hide Mode:** Optional setting to hide ALL preview nodes in the workflow (Settings → SATA Utility: Global Hide Previews).
+- **Save Machine Integration:** The Save Machine node also includes a `hide_preview` toggle (default: hidden) with the same hover-to-reveal behavior.
 
 
 ## 📦 Installation

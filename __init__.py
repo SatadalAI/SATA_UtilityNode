@@ -1,5 +1,3 @@
-# __init__.py
-
 # Import all the node classes from the nodes directory
 from .nodes.prompt_machine import Prompt_Machine
 from .nodes.resolution_machine import Resolution_Machine

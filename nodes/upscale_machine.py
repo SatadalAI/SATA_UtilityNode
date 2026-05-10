@@ -83,7 +83,7 @@ class Upscale_Machine:
         model.eval()
         return model
 
-    def upscale_with_model(self, upscale_model, image_bhwc):
+    def upscale_with_model(self, upscale_model, image_bhwc, pbar=None):
         """
         Run tiled upscale with spandrel model.
         Input:  image_bhwc -> (B,H,W,C) float [0,1]
@@ -99,10 +99,14 @@ class Upscale_Machine:
         oom = True
         while oom:
             try:
-                steps = in_img.shape[0] * comfy.utils.get_tiled_scale_steps(
-                    in_img.shape[3], in_img.shape[2], tile_x=tile, tile_y=tile, overlap=overlap
-                )
-                pbar = comfy.utils.ProgressBar(steps)
+                if not pbar:
+                    steps = in_img.shape[0] * comfy.utils.get_tiled_scale_steps(
+                        in_img.shape[3], in_img.shape[2], tile_x=tile, tile_y=tile, overlap=overlap
+                    )
+                    local_pbar = comfy.utils.ProgressBar(steps)
+                else:
+                    local_pbar = pbar
+
                 s = comfy.utils.tiled_scale(
                     in_img,
                     lambda a: upscale_model(a),
@@ -110,7 +114,7 @@ class Upscale_Machine:
                     tile_y=tile,
                     overlap=overlap,
                     upscale_amount=getattr(upscale_model, "scale", 4),
-                    pbar=pbar
+                    pbar=local_pbar
                 )
                 oom = False
             except model_management.OOM_EXCEPTION as e:
@@ -139,11 +143,25 @@ class Upscale_Machine:
         target_height = self._round_to_modulus(original_height * rescale_factor, rounding_modulus)
 
         current_bhwc = image
+        
+        # Calculate total steps for progress bar
+        total_steps = 0
+        if upscale_model:
+            total_steps += image.shape[0] * comfy.utils.get_tiled_scale_steps(
+                image.shape[2], image.shape[1], tile_x=512, tile_y=512, overlap=32
+            )
+        if chained_model and chained_model != "None":
+            # Rough estimate: if chained model runs on target_width/height after intermediate downscale
+            total_steps += image.shape[0] * comfy.utils.get_tiled_scale_steps(
+                target_width, target_height, tile_x=512, tile_y=512, overlap=32
+            )
+
+        pbar = comfy.utils.ProgressBar(total_steps) if total_steps > 0 else None
 
         # First upscale
         if upscale_model:
             up_model = self.load_model(upscale_model)
-            up_bchw = self.upscale_with_model(up_model, current_bhwc)
+            up_bchw = self.upscale_with_model(up_model, current_bhwc, pbar)
             current_bhwc = up_bchw.movedim(1, -1).contiguous()
 
             # Downscale to target size before chaining
@@ -167,7 +185,7 @@ class Upscale_Machine:
         if chained_model and chained_model != "None":
             # chained model is a model name
             chain_model = self.load_model(chained_model)
-            chain_bchw = self.upscale_with_model(chain_model, current_bhwc)
+            chain_bchw = self.upscale_with_model(chain_model, current_bhwc, pbar)
             current_bhwc = chain_bchw.movedim(1, -1).contiguous()
 
         # If no chained model, ensure output is at target size

@@ -1,6 +1,7 @@
 import torch
 import torch.fft
 import random
+import comfy.model_management
 
 class Latent_Machine:
     """
@@ -9,7 +10,7 @@ class Latent_Machine:
     """
     
     def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = comfy.model_management.get_torch_device()
 
     @classmethod
     def INPUT_TYPES(s):
@@ -41,7 +42,8 @@ class Latent_Machine:
             }
         }
 
-    RETURN_TYPES = ("LATENT",)
+    RETURN_TYPES = ("LATENT", "IMAGE")
+    RETURN_NAMES = ("LATENT", "IMAGE")
     FUNCTION = "generate_noise"
     CATEGORY = "SATA_UtilityNode"
 
@@ -92,7 +94,26 @@ class Latent_Machine:
         # Apply intensity
         noise = noise * intensity
 
-        return ({"samples": noise},)
+        # Prepare Image output for visualization/masking
+        # Slice the first 3 channels and normalize to [0, 1]
+        img_tensor = noise[:, :3, :, :]
+        if img_tensor.shape[1] < 3:
+            # If for some weird reason it's less than 3 channels, pad it
+            padding = torch.zeros((batch_size, 3 - img_tensor.shape[1], h, w), device=self.device)
+            img_tensor = torch.cat([img_tensor, padding], dim=1)
+        
+        # Normalize min-max
+        img_min = img_tensor.min()
+        img_max = img_tensor.max()
+        if img_max > img_min:
+            img_tensor = (img_tensor - img_min) / (img_max - img_min)
+        else:
+            img_tensor = torch.zeros_like(img_tensor)
+
+        # Move to (B, H, W, C) for ComfyUI Image format
+        img_tensor = img_tensor.movedim(1, -1)
+
+        return ({"samples": noise}, img_tensor)
 
     def generate_power_law_noise(self, batch_size, c, h, w, alpha):
         # Generate White Noise (Standard Gaussian)

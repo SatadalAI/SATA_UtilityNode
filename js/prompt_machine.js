@@ -70,9 +70,24 @@ app.registerExtension({
         };
 
         // --- Preview Logic ---
-        const posPreview = node.widgets.find(w => w.name === "positive_preview");
-        const negPreview = node.widgets.find(w => w.name === "negative_preview");
-        const notePreview = node.widgets.find(w => w.name === "note_preview");
+        const previewEl = document.createElement("div");
+        Object.assign(previewEl.style, {
+            marginTop: "10px",
+            padding: "8px",
+            background: "rgba(0,0,0,0.4)",
+            borderRadius: "4px",
+            fontSize: "12px",
+            lineHeight: "1.4",
+            color: "#ddd",
+            wordBreak: "break-word",
+            maxHeight: "300px",
+            overflowY: "auto"
+        });
+        
+        node.addDOMWidget("preview_text", "html", previewEl, {
+            getValue: () => previewEl.innerHTML,
+            setValue: (v) => { previewEl.innerHTML = v; }
+        });
 
         async function updatePreviews(name) {
             const csv = csvWidget.value;
@@ -81,10 +96,15 @@ app.registerExtension({
             try {
                 const resp = await fetch(`/sata/prompt_machine/get?csv=${encodeURIComponent(csv)}&name=${encodeURIComponent(name)}`);
                 const data = await resp.json();
-
-                if (posPreview) posPreview.value = data.positive || "";
-                if (negPreview) negPreview.value = data.negative || "";
-                if (notePreview) notePreview.value = data.note || "";
+                let html = "";
+                if (data.positive) html += `<b>Positive:</b> ${data.positive}<br><br>`;
+                if (data.negative) html += `<b>Negative:</b> ${data.negative}<br><br>`;
+                if (data.note) html += `<b>Note:</b> ${data.note}`;
+                
+                previewEl.innerHTML = html || "<i>No preview available</i>";
+                
+                // Adjust node size to fit content
+                node.setSize(node.computeSize());
 
                 app.graph.change();
             } catch (err) {

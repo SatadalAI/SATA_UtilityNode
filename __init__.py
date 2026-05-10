@@ -20,13 +20,13 @@ NODE_CLASS_MAPPINGS = {
 
 # A dictionary that maps display names to class names
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Prompt Machine": "Prompt_Machine",
-    "Resolution Machine": "Resolution_Machine",
-    "Save Machine": "Save_Machine",
-    "Upscale Machine": "Upscale_Machine",
-    "Prompt Autocomplete": "PromptAutocomplete",
-    "Latent Machine": "Latent_Machine",
-    "Preview Machine": "Preview_Machine",
+    "Prompt_Machine": "Prompt Machine",
+    "Resolution_Machine": "Resolution Machine",
+    "Save_Machine": "Save Machine",
+    "Upscale_Machine": "Upscale Machine",
+    "PromptAutocomplete": "Prompt Autocomplete",
+    "Latent_Machine": "Latent Machine",
+    "Preview_Machine": "Preview Machine",
 }
 
 # A dictionary that contains web directory information

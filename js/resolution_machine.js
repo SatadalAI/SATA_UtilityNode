@@ -79,12 +79,20 @@ app.registerExtension({
 
         function checkCustomMode() {
             if (resolutionWidget.value === "Custom") {
+                widthWidget.type = "INT";
+                heightWidget.type = "INT";
+                widthWidget.computeSize = LGraphCanvas.prototype.computeSize;
+                heightWidget.computeSize = LGraphCanvas.prototype.computeSize;
                 widthWidget.disabled = false;
                 heightWidget.disabled = false;
             } else {
-                // Check if selected is actually a preset
+                widthWidget.type = "hidden";
+                heightWidget.type = "hidden";
+                widthWidget.computeSize = () => [0, -4];
+                heightWidget.computeSize = () => [0, -4];
                 applyResolutionPreset();
             }
+            node.setSize(node.computeSize());
             app.graph.change();
         }
 
@@ -95,8 +103,6 @@ app.registerExtension({
             const selectedResolution = resolutionWidget.value;
 
             if (selectedResolution === "Custom") {
-                widthWidget.disabled = false;
-                heightWidget.disabled = false;
                 return;
             }
 
@@ -119,13 +125,6 @@ app.registerExtension({
             if (resolutionData) {
                 widthWidget.value = resolutionData.width;
                 heightWidget.value = resolutionData.height;
-                widthWidget.disabled = true;
-                heightWidget.disabled = true;
-            } else {
-                // Should not happen if list logic is correct, unless race condition
-                // fallback
-                widthWidget.disabled = false;
-                heightWidget.disabled = false;
             }
         }
 

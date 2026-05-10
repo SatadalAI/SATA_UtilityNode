@@ -92,7 +92,7 @@ class Save_Machine:
         return {
             "required": {
                 "images": ("IMAGE", ),
-                "path_and_filename": ("STRING", {"default": "%time"}),
+                "path_and_filename": ("STRING", {"default": "%time", "tooltip": "Supports %date, %time, and custom prompt %placeholders%"}),
                 "extension": ((['png', 'jpeg', 'webp']),),
             },
             "optional": {
@@ -103,16 +103,18 @@ class Save_Machine:
             },
             "hidden": {
                 "prompt": "PROMPT",
+                "extra_pnginfo": "EXTRA_PNGINFO"
             },
         }
 
-    RETURN_TYPES = ()
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("file_path",)
     FUNCTION = "save_files"
     OUTPUT_NODE = True
     CATEGORY = "SATA_UtilityNode"
 
     def save_files(self, images, path_and_filename, extension, custom_string=None,
-                   quality_jpeg_or_webp=100, lossless_webp=True, hide_preview=True, prompt=None):
+                   quality_jpeg_or_webp=100, lossless_webp=True, hide_preview=True, prompt=None, extra_pnginfo=None):
         # Resolve placeholders first (uses prompt)
         try:
             resolved = resolve_placeholders(str(path_and_filename), prompt)
@@ -158,13 +160,17 @@ class Save_Machine:
             pass
 
         filenames = self.save_images(images, output_path, filename, comment, extension,
-                                     quality_jpeg_or_webp, lossless_webp, prompt)
+                                     quality_jpeg_or_webp, lossless_webp, prompt, extra_pnginfo)
 
         subfolder = os.path.normpath(path)
         ui_images = [ {"filename": fn, "subfolder": subfolder if subfolder != '.' else '', "type": 'output'} for fn in filenames ]
-        return {"ui": {"images": ui_images}}
+        
+        # Return the absolute path of the first saved image (or output directory if none)
+        first_file_path = os.path.join(output_path, filenames[0]) if filenames else output_path
+        
+        return {"ui": {"images": ui_images}, "result": (first_file_path,)}
 
-    def save_images(self, images, output_path, filename_prefix, comment, extension, quality_jpeg_or_webp, lossless_webp, prompt=None) -> list:
+    def save_images(self, images, output_path, filename_prefix, comment, extension, quality_jpeg_or_webp, lossless_webp, prompt=None, extra_pnginfo=None) -> list:
         img_count = 1
         paths = []
 
@@ -224,7 +230,9 @@ class Save_Machine:
                     except Exception:
                         metadata.add_text("prompt", str(prompt))
 
-                    # No extra_pnginfo support: only include the prompt (handled above)
+                if extra_pnginfo is not None:
+                    for x in extra_pnginfo:
+                        metadata.add_text(x, json.dumps(extra_pnginfo[x]))
 
                 outname = find_unique_name(base_name, 'png')
                 img.save(os.path.join(output_path, outname), pnginfo=metadata, optimize=True)
@@ -240,11 +248,19 @@ class Save_Machine:
                 img.save(file_path, optimize=True, quality=quality_jpeg_or_webp, lossless=lossless_webp if ext_name=='webp' else False)
 
                 # Insert EXIF user comment with our metadata
-                if comment:
+                if comment or extra_pnginfo or prompt:
                     try:
+                        exif_dict = {}
+                        if comment:
+                            exif_dict["comment"] = comment
+                        if prompt:
+                            exif_dict["prompt"] = prompt
+                        if extra_pnginfo:
+                            exif_dict["workflow"] = extra_pnginfo.get("workflow", {})
+                        
                         exif_bytes = piexif.dump({
                             "Exif": {
-                                piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(comment, encoding="unicode")
+                                piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(json.dumps(exif_dict), encoding="unicode")
                             },
                         })
                         piexif.insert(exif_bytes, file_path)

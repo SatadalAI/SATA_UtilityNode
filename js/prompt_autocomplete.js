@@ -1,30 +1,38 @@
 import { app } from "../../../scripts/app.js";
 
+// Helper to get settings for both ComfyUI V1 and V2
+function getSettingValue(id, defaultValue) {
+    if (app.extensionManager && app.extensionManager.setting) {
+        const val = app.extensionManager.setting.get(id);
+        return val !== undefined ? val : defaultValue;
+    } else if (app.ui && app.ui.settings) {
+        return app.ui.settings.getSettingValue(id, defaultValue);
+    }
+    return defaultValue;
+}
+
 // Register extension
 app.registerExtension({
     name: "SATA_UtilityNode.PromptAutocomplete",
 
-    async setup() {
-        // Add settings
-        app.ui.settings.addSetting({
+    settings: [
+        {
             id: "SATA_UtilityNode.PromptAutocomplete.Trigger",
             name: "Prompt Autocomplete Trigger Character",
             type: "text",
             defaultValue: "#",
-        });
-
-        app.ui.settings.addSetting({
+        },
+        {
             id: "SATA_UtilityNode.PromptAutocomplete.Global",
             name: "Prompt Autocomplete Global Mode (All Text Widgets)",
             type: "boolean",
             defaultValue: false,
-        });
-    },
+        }
+    ],
 
-    async nodeCreated(node) {
-        // Check if we should attach to this node
+    async initAutocompleteForNode(node) {
         const isTargetNode = node.comfyClass === "PromptAutocomplete";
-        const isGlobal = app.ui.settings.getSettingValue("SATA_UtilityNode.PromptAutocomplete.Global", false);
+        const isGlobal = getSettingValue("SATA_UtilityNode.PromptAutocomplete.Global", false);
 
         if (!isTargetNode && !isGlobal) return;
 
@@ -40,6 +48,14 @@ app.registerExtension({
         textWidgets.forEach(w => {
             this.attachAutocomplete(w);
         });
+    },
+
+    async nodeCreated(node) {
+        this.initAutocompleteForNode(node);
+    },
+
+    async loadedGraphNode(node) {
+        this.initAutocompleteForNode(node);
     },
 
     snippetsCache: null,
@@ -137,7 +153,7 @@ app.registerExtension({
     triggerChar: "#",
 
     handleInput(e, input, widget) {
-        const trigger = app.ui.settings.getSettingValue("SATA_UtilityNode.PromptAutocomplete.Trigger", "#");
+        const trigger = getSettingValue("SATA_UtilityNode.PromptAutocomplete.Trigger", "#");
         this.triggerChar = trigger;
 
         const val = input.value;
@@ -403,6 +419,7 @@ app.registerExtension({
     },
 
     selectItem(input) {
+        if (!input) return;
         const item = this.filteredItems[this.selectedIndex];
         if (!item) return;
 

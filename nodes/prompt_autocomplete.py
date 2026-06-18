@@ -10,6 +10,7 @@ PROMPT_DIR = os.path.join(os.path.dirname(__file__), "..", "prompt")
 def list_prompt_files():
     try:
         if not os.path.exists(PROMPT_DIR):
+            os.makedirs(PROMPT_DIR, exist_ok=True)
             return []
         return sorted([f for f in os.listdir(PROMPT_DIR) if f.endswith(".csv") or f.endswith(".json")])
     except Exception as e:

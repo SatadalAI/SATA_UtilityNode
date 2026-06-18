@@ -41,7 +41,7 @@ def make_filename(template: str):
     return get_timestamp("%Y-%m-%d-%H%M%S") if filename == "" else filename
 
 
-def resolve_placeholders(template: str, prompt=None) -> str:
+def resolve_placeholders(template: str, prompt=None, extra_pnginfo=None) -> str:
     """Resolve placeholders of the form %node_name/field% by looking into extra_pnginfo and prompt.
 
     This is a best-effort resolver: it attempts several lookup strategies and falls back to leaving
@@ -50,18 +50,58 @@ def resolve_placeholders(template: str, prompt=None) -> str:
     if not template or '%' not in template:
         return template
 
+    # Build title/type to node ID mapping from extra_pnginfo
+    node_title_to_id = {}
+    node_type_to_ids = {}
+    if extra_pnginfo and isinstance(extra_pnginfo, dict) and "workflow" in extra_pnginfo:
+        workflow = extra_pnginfo["workflow"]
+        if isinstance(workflow, dict) and "nodes" in workflow:
+            for node in workflow["nodes"]:
+                if isinstance(node, dict):
+                    node_id = str(node.get("id"))
+                    node_title = node.get("title")
+                    node_type = node.get("type")
+                    if node_title:
+                        node_title_to_id[node_title] = node_id
+                    if node_type:
+                        if node_type not in node_type_to_ids:
+                            node_type_to_ids[node_type] = []
+                        node_type_to_ids[node_type].append(node_id)
+
     def lookup(key: str):
-        # key is like 'node_name/field' or 'field'
         if not key:
             return None
-        # Try prompt mapping
+        
+        node_ref = None
+        field = key
+        if '/' in key:
+            node_ref, field = key.split('/', 1)
+
+        node_id = None
+        if node_ref:
+            if prompt and node_ref in prompt:
+                node_id = node_ref
+            elif node_ref in node_title_to_id:
+                node_id = node_title_to_id[node_ref]
+            elif node_ref in node_type_to_ids:
+                node_id = node_type_to_ids[node_ref][0]
+        
+        if node_id and prompt and node_id in prompt:
+            node_data = prompt[node_id]
+            if isinstance(node_data, dict) and "inputs" in node_data:
+                inputs = node_data["inputs"]
+                if field in inputs:
+                    return inputs[field]
+
+        # Fallback: check if the key is directly in prompt or if it is just a field name in some node
         if prompt and isinstance(prompt, dict):
             if key in prompt:
                 return prompt[key]
-            if '/' in key:
-                _, field = key.split('/', 1)
-                if field in prompt:
-                    return prompt[field]
+            for nid, ndata in prompt.items():
+                if isinstance(ndata, dict) and "inputs" in ndata:
+                    inputs = ndata.get("inputs", {})
+                    if field in inputs:
+                        return inputs[field]
 
         return None
 
@@ -117,7 +157,7 @@ class Save_Machine:
                    quality_jpeg_or_webp=100, lossless_webp=True, hide_preview=True, prompt=None, extra_pnginfo=None):
         # Resolve placeholders first (uses prompt)
         try:
-            resolved = resolve_placeholders(str(path_and_filename), prompt)
+            resolved = resolve_placeholders(str(path_and_filename), prompt, extra_pnginfo)
         except Exception:
             resolved = str(path_and_filename)
 
@@ -153,8 +193,8 @@ class Save_Machine:
 
         # Resolve any %node/field% placeholders in filename and path using prompt
         try:
-            filename = resolve_placeholders(filename, prompt)
-            path = resolve_placeholders(path, prompt)
+            filename = resolve_placeholders(filename, prompt, extra_pnginfo)
+            path = resolve_placeholders(path, prompt, extra_pnginfo)
         except Exception:
             # Best-effort: if resolution fails, continue with original templates
             pass

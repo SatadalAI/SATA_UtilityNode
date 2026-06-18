@@ -97,7 +97,10 @@ LGraphCanvas.prototype.processMouseWheel = function (/** @type {WheelEvent} */ e
 
   if (!this.graph || !this.allow_dragcanvas) return;
 
-  const { clientX: x, clientY: y, deltaX, deltaY, ctrlKey, metaKey } = event;
+  const rect = this.canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const { deltaX, deltaY, ctrlKey, metaKey } = event;
 
   // Check if the event occurred inside the canvas viewport
   if (this.viewport) {

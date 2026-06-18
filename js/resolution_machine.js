@@ -81,8 +81,8 @@ app.registerExtension({
             if (resolutionWidget.value === "Custom") {
                 widthWidget.type = "INT";
                 heightWidget.type = "INT";
-                widthWidget.computeSize = LGraphCanvas.prototype.computeSize;
-                heightWidget.computeSize = LGraphCanvas.prototype.computeSize;
+                delete widthWidget.computeSize;
+                delete heightWidget.computeSize;
                 widthWidget.disabled = false;
                 heightWidget.disabled = false;
             } else {

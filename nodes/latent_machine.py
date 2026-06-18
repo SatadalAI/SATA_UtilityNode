@@ -10,7 +10,7 @@ class Latent_Machine:
     """
     
     def __init__(self):
-        self.device = comfy.model_management.get_torch_device()
+        pass
 
     @classmethod
     def INPUT_TYPES(s):
@@ -48,6 +48,7 @@ class Latent_Machine:
     CATEGORY = "SATA_UtilityNode"
 
     def generate_noise(self, width, height, batch_size, model_type, noise_type, intensity, seed):
+        self.device = comfy.model_management.get_torch_device()
         # Set seed for reproducibility
         torch.manual_seed(seed)
         random.seed(seed)

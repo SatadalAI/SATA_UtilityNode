@@ -8,11 +8,22 @@ const SAVE_MACHINE_CLASS = "Save_Machine";
 // Track hover state
 const hoveredNodeIds = new Set();
 
+// Helper to get settings for both ComfyUI V1 and V2
+function getSettingValue(id, defaultValue) {
+    if (app.extensionManager && app.extensionManager.setting) {
+        const val = app.extensionManager.setting.get(id);
+        return val !== undefined ? val : defaultValue;
+    } else if (app.ui && app.ui.settings) {
+        return app.ui.settings.getSettingValue(id, defaultValue);
+    }
+    return defaultValue;
+}
+
 app.registerExtension({
     name: "SATA_UtilityNode.Preview_Machine",
 
-    async setup() {
-        app.ui.settings.addSetting({
+    settings: [
+        {
             id: GLOBAL_HIDE_SETTING_ID,
             name: "SATA Utility: Global Hide Previews",
             type: "boolean",
@@ -20,8 +31,10 @@ app.registerExtension({
             onChange: (value) => {
                 if (app.graph) app.graph.setDirtyCanvas(true, true);
             }
-        });
+        }
+    ],
 
+    async setup() {
         setupGlobalMouseTracker();
     },
 
@@ -46,7 +59,7 @@ function isTargetNode(node) {
 }
 
 function shouldHideNode(node) {
-    const globalHide = app.ui.settings.getSettingValue(GLOBAL_HIDE_SETTING_ID, false);
+    const globalHide = getSettingValue(GLOBAL_HIDE_SETTING_ID, false);
 
     if (node.comfyClass === PREVIEW_MACHINE_CLASS) {
         return true;

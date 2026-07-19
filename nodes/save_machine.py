@@ -135,12 +135,6 @@ class Save_Machine:
                 "path_and_filename": ("STRING", {"default": "%time", "tooltip": "Supports %date, %time, and custom prompt %placeholders%"}),
                 "extension": ((['png', 'jpeg', 'webp']),),
             },
-            "optional": {
-                "custom_string": ("STRING", {"default": ''}),
-                "lossless_webp": ("BOOLEAN", {"default": True}),
-                "quality_jpeg_or_webp": ("INT", {"default": 100, "min": 1, "max": 100}),
-                "hide_preview": ("BOOLEAN", {"default": True, "label_on": "Hidden", "label_off": "Visible"}),
-            },
             "hidden": {
                 "prompt": "PROMPT",
                 "extra_pnginfo": "EXTRA_PNGINFO"
@@ -153,8 +147,7 @@ class Save_Machine:
     OUTPUT_NODE = True
     CATEGORY = "SATA_UtilityNode"
 
-    def save_files(self, images, path_and_filename, extension, custom_string=None,
-                   quality_jpeg_or_webp=100, lossless_webp=True, hide_preview=True, prompt=None, extra_pnginfo=None):
+    def save_files(self, images, path_and_filename, extension, prompt=None, extra_pnginfo=None):
         # Resolve placeholders first (uses prompt)
         try:
             resolved = resolve_placeholders(str(path_and_filename), prompt, extra_pnginfo)
@@ -180,8 +173,6 @@ class Save_Machine:
                 os.makedirs(output_path, exist_ok=True)
 
         comment_parts = []
-        if custom_string:
-            comment_parts.append(handle_whitespace(custom_string))
         if prompt is not None:
             try:
                 prompt_text = json.dumps(prompt)
@@ -199,8 +190,9 @@ class Save_Machine:
             # Best-effort: if resolution fails, continue with original templates
             pass
 
+        # We always use quality=100 and lossless_webp=True
         filenames = self.save_images(images, output_path, filename, comment, extension,
-                                     quality_jpeg_or_webp, lossless_webp, prompt, extra_pnginfo)
+                                     100, True, prompt, extra_pnginfo)
 
         subfolder = os.path.normpath(path)
         ui_images = [ {"filename": fn, "subfolder": subfolder if subfolder != '.' else '', "type": 'output'} for fn in filenames ]

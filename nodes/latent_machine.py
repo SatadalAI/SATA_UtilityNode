@@ -1,44 +1,70 @@
+import json
+import os
 import torch
 import torch.fft
 import random
 import comfy.model_management
 
+NODE_NAME = "Latent_Machine"
+
+# Path to JSON config (root of SATA_UtilityNode folder)
+CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "asset", "resolutions.json"
+)
+
+def load_config():
+    if not os.path.exists(CONFIG_PATH):
+        raise FileNotFoundError(f"[{NODE_NAME}] resolutions.json not found at {CONFIG_PATH}")
+    with open(CONFIG_PATH, "r", encoding="utf-8-sig") as f:
+        return json.load(f)
+
+
 class Latent_Machine:
     """
     Creates an empty latent initialized with Power-Law (1/f) noise, Perlin-like noise, or Plasma noise.
     Supports 4-channel (SD1.5/SDXL) and 16-channel (Flux/SD3) latents.
+    Supports recommended model resolutions out of the box.
     """
     
     def __init__(self):
         pass
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
+        config = load_config()
+
+        # all models
+        models = list(config["models"].keys())
+        default_model = models[0] if models else "Unknown"
+
+        # Collect ALL possible resolutions to pass validation
+        all_resolutions = set(["Custom"])
+        if "resolutions" in config:
+            for bucket in config["resolutions"].values():
+                for dim in bucket.values():
+                    all_resolutions.update(dim.keys())
+        
+        resolutions_list = sorted(list(all_resolutions))
+
         return {
             "required": {
+                "model": (models, {"default": default_model}),
+                "dimension": (["Square", "Portrait", "Landscape"],),
+                "resolution": (resolutions_list,), 
                 "width": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
                 "height": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
                 "batch_size": ("INT", {"default": 1, "min": 1, "max": 64}),
-                "model_type": ([
-                    "SD1.5",
-                    "SDXL",
-                    "PicsArt",
-                    "Kolors",
-                    "Auraflow",
-                    "Flux",
-                    "Qwen",
-                    "SD3",
-                    "Lumina"
-                ],),
                 "noise_type": ([
                     "Gaussian (White): Sharp Architecture, Text, intricate mechanics",
                     "Pink (1/f): Photorealism, Portraits, Nature",
                     "Brown (1/f²): Anime, Digital Art, Bokeh/Backgrounds",
+                    "Blue (High-Frequency): High-Detail, Textures, low-step/distilled models",
                     "Perlin : Fantasy landscapes, Fluids, Hair/Fabric",
                     "Plasma : Sci-Fi, Abstract, Alien terrain"
                 ],),
                 "intensity": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.1}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+                "high_contrast": ("BOOLEAN", {"default": False}),
             }
         }
 
@@ -47,44 +73,93 @@ class Latent_Machine:
     FUNCTION = "generate_noise"
     CATEGORY = "SATA_UtilityNode"
 
-    def generate_noise(self, width, height, batch_size, model_type, noise_type, intensity, seed):
+    def get_resolution_dimensions(self, model, dimension, resolution, width, height):
+        try:
+            config = load_config()
+        except Exception:
+            return (width, height)
+
+        if model not in config.get("models", {}):
+            return (width, height)
+
+        if resolution == "Custom":
+            return (width, height)
+
+        buckets = config["models"][model]
+        
+        resolution_data = None
+        for bucket in buckets:
+            if bucket in config.get("resolutions", {}):
+                 if dimension in config["resolutions"][bucket]:
+                      if resolution in config["resolutions"][bucket][dimension]:
+                          resolution_data = config["resolutions"][bucket][dimension][resolution]
+                          break
+        
+        if not resolution_data:
+             return (width, height)
+
+        return (resolution_data["width"], resolution_data["height"])
+
+    def generate_noise(self, model="SD 1.5", dimension="Square", resolution="Custom", width=512, height=512, batch_size=1, noise_type="Gaussian (White): Sharp Architecture, Text, intricate mechanics", intensity=1.0, seed=0, high_contrast=False):
+        # Check if this is an old node layout (shifted arguments due to ComfyUI's positional widget serialization)
+        if isinstance(model, int):
+            actual_width = model
+            actual_height = dimension
+            actual_batch_size = resolution
+            actual_model = width # The 4th argument 'width' holds the old 'model_type' (str)
+            actual_noise_type = height
+            actual_intensity = batch_size
+            actual_seed = noise_type
+            actual_high_contrast = False
+        else:
+            actual_model = model
+            actual_width, actual_height = self.get_resolution_dimensions(model, dimension, resolution, width, height)
+            actual_batch_size = batch_size
+            actual_noise_type = noise_type
+            actual_intensity = intensity
+            actual_seed = seed
+            actual_high_contrast = high_contrast
+
         self.device = comfy.model_management.get_torch_device()
         # Set seed for reproducibility
-        torch.manual_seed(seed)
-        random.seed(seed)
+        torch.manual_seed(actual_seed)
+        random.seed(actual_seed)
         
-        # Determine channels based on model type
-        sixteen_channel_models = ["Flux", "Qwen", "SD3", "Lumina"]
-        
-        if model_type in sixteen_channel_models:
+        # Determine channels based on model
+        model_lower = actual_model.lower()
+        if any(k in model_lower for k in ["flux", "qwen", "sd3", "lumina", "wan", "auraflow", "z-image", "mochi", "ltx", "hunyuanvideo"]):
             c = 16
         else:
             c = 4
             
         # Latent dimensions (compressed by 8)
-        h = height // 8
-        w = width // 8
+        h = actual_height // 8
+        w = actual_width // 8
         
         # Generate base noise
-        if "Gaussian" in noise_type:
-            noise = torch.randn((batch_size, c, h, w), device=self.device)
+        if "Gaussian" in actual_noise_type:
+            noise = torch.randn((actual_batch_size, c, h, w), device=self.device)
             
-        elif "Perlin" in noise_type:
+        elif "Perlin" in actual_noise_type:
             # Multi-Octave Value Noise Approximation
-            noise = self.generate_perlin_approx(batch_size, c, h, w)
+            noise = self.generate_perlin_approx(actual_batch_size, c, h, w)
+            
+        elif "Blue" in actual_noise_type:
+            # FFT-based Blue Noise (High-Frequency)
+            noise = self.generate_blue_noise(actual_batch_size, c, h, w)
             
         else:
             # FFT-based Power Law Noise (Pink, Brown, Plasma)
-            if "Pink" in noise_type:
+            if "Pink" in actual_noise_type:
                 alpha = 1.0
-            elif "Brown" in noise_type:
+            elif "Brown" in actual_noise_type:
                 alpha = 2.0
-            elif "Plasma" in noise_type:
+            elif "Plasma" in actual_noise_type:
                 alpha = 3.0 # Very smooth
             else:
                 alpha = 0.0 # Fallback to white
                 
-            noise = self.generate_power_law_noise(batch_size, c, h, w, alpha)
+            noise = self.generate_power_law_noise(actual_batch_size, c, h, w, alpha)
 
         # Normalize standard deviation to match expected latent variance (approx 1.0 for standard Gaussian)
         # This ensures intensity works consistently across different noise types
@@ -92,15 +167,19 @@ class Latent_Machine:
         if current_std > 1e-6:
             noise = noise / current_std
             
+        # Apply offset noise for high contrast
+        if actual_high_contrast:
+            noise = noise + 0.1
+            
         # Apply intensity
-        noise = noise * intensity
+        noise = noise * actual_intensity
 
         # Prepare Image output for visualization/masking
         # Slice the first 3 channels and normalize to [0, 1]
         img_tensor = noise[:, :3, :, :]
         if img_tensor.shape[1] < 3:
             # If for some weird reason it's less than 3 channels, pad it
-            padding = torch.zeros((batch_size, 3 - img_tensor.shape[1], h, w), device=self.device)
+            padding = torch.zeros((actual_batch_size, 3 - img_tensor.shape[1], h, w), device=self.device)
             img_tensor = torch.cat([img_tensor, padding], dim=1)
         
         # Normalize min-max
@@ -177,3 +256,31 @@ class Latent_Machine:
         noise += torch.randn((batch_size, c, h, w), device=self.device) * 0.05
         
         return noise
+
+    def generate_blue_noise(self, batch_size, c, h, w, beta=1.5):
+        # Generate White Noise (Standard Gaussian)
+        white_noise = torch.randn((batch_size, c, h, w), device=self.device)
+        
+        # Convert to Frequency Domain (FFT)
+        fft_noise = torch.fft.fft2(white_noise)
+        
+        # Create Frequency Grid
+        y = torch.fft.fftfreq(h, device=self.device)
+        x = torch.fft.fftfreq(w, device=self.device)
+        dy, dx = torch.meshgrid(y, x, indexing='ij')
+        
+        # Calculate distance from center (frequency magnitude)
+        frequency_magnitude = torch.sqrt(dy**2 + dx**2)
+        
+        # Apply High-Pass Scaling: Amplitude ~ f^(beta/2)
+        scale = frequency_magnitude ** (beta / 2.0)
+        
+        # Zero out DC component
+        scale[0, 0] = 0 
+        
+        fft_structured = fft_noise * scale
+        
+        # Convert back to Spatial Domain (Inverse FFT)
+        blue_noise = torch.fft.ifft2(fft_structured).real
+        
+        return blue_noise

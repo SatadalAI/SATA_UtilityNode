@@ -11,6 +11,31 @@ function getSettingValue(id, defaultValue) {
     return defaultValue;
 }
 
+function fuzzyMatch(text, query) {
+    const textLower = text.toLowerCase();
+    const queryLower = query.toLowerCase();
+    if (!queryLower) return { match: true, score: 0 };
+
+    let queryIdx = 0;
+    let score = 0;
+    let lastMatchIdx = -1;
+
+    for (let i = 0; i < textLower.length; i++) {
+        if (textLower[i] === queryLower[queryIdx]) {
+            if (lastMatchIdx !== -1) {
+                score += (i - lastMatchIdx - 1);
+            }
+            lastMatchIdx = i;
+            queryIdx++;
+            if (queryIdx === queryLower.length) {
+                score += (textLower.length - i - 1) * 0.1;
+                return { match: true, score: score };
+            }
+        }
+    }
+    return { match: false, score: Infinity };
+}
+
 // Register extension
 app.registerExtension({
     name: "SATA_UtilityNode.PromptAutocomplete",
@@ -31,7 +56,7 @@ app.registerExtension({
     ],
 
     async initAutocompleteForNode(node) {
-        const isTargetNode = node.comfyClass === "PromptAutocomplete";
+        const isTargetNode = node.comfyClass === "PromptAutocomplete" || node.comfyClass === "Prompt_Machine";
         const isGlobal = getSettingValue("SATA_UtilityNode.PromptAutocomplete.Global", false);
 
         if (!isTargetNode && !isGlobal) return;
@@ -308,14 +333,22 @@ app.registerExtension({
 
     updateCategories(query) {
         const files = Object.keys(this.snippetsCache || {});
-        // Filter by query
-        // We display stripped names (no extension)
-        this.filteredItems = files.map(f => ({
-            type: "category",
-            value: f,
-            display: f.replace(/\.(csv|json)$/, "")
-        })).filter(item => item.display.toLowerCase().includes(query.toLowerCase()));
+        const matches = [];
+        files.forEach(f => {
+            const display = f.replace(/\.(csv|json)$/, "");
+            const res = fuzzyMatch(display, query);
+            if (res.match) {
+                matches.push({
+                    type: "category",
+                    value: f,
+                    display: display,
+                    score: res.score
+                });
+            }
+        });
+        matches.sort((a, b) => a.score - b.score);
 
+        this.filteredItems = matches;
         this.selectedIndex = 0;
         this.renderPopup();
     },
@@ -324,13 +357,20 @@ app.registerExtension({
         if (!this.currentCategory) return;
         const items = this.snippetsCache[this.currentCategory] || [];
 
-        // Filter
-        let matches = items.filter(i => i.toLowerCase().includes(query.toLowerCase()));
+        const matches = [];
+        items.forEach(i => {
+            const res = fuzzyMatch(i, query);
+            if (res.match) {
+                matches.push({ value: i, score: res.score });
+            }
+        });
+        matches.sort((a, b) => a.score - b.score);
+        const sortedItems = matches.map(m => m.value).slice(0, 100);
 
         // Add "Random" option at top
         this.filteredItems = [
             { type: "random", value: "RANDOM", display: "🎲 Random" },
-            ...matches.map(i => ({ type: "item", value: i, display: i }))
+            ...sortedItems.map(i => ({ type: "item", value: i, display: i }))
         ];
 
         this.selectedIndex = 0;

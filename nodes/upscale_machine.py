@@ -8,6 +8,40 @@ from comfy import model_management
 from spandrel import ModelLoader
 
 
+def generate_blue_noise(batch_size, c, h, w, device, beta=1.5):
+    # Generate White Noise (Standard Gaussian)
+    white_noise = torch.randn((batch_size, c, h, w), device=device)
+    
+    # Convert to Frequency Domain (FFT)
+    fft_noise = torch.fft.fft2(white_noise)
+    
+    # Create Frequency Grid
+    y = torch.fft.fftfreq(h, device=device)
+    x = torch.fft.fftfreq(w, device=device)
+    dy, dx = torch.meshgrid(y, x, indexing='ij')
+    
+    # Calculate distance from center (frequency magnitude)
+    frequency_magnitude = torch.sqrt(dy**2 + dx**2)
+    
+    # Apply High-Pass Scaling: Amplitude ~ f^(beta/2)
+    scale = frequency_magnitude ** (beta / 2.0)
+    
+    # Zero out DC component
+    scale[0, 0] = 0 
+    
+    fft_structured = fft_noise * scale
+    
+    # Convert back to Spatial Domain (Inverse FFT)
+    blue_noise = torch.fft.ifft2(fft_structured).real
+    
+    # Normalize standard deviation to ~1.0
+    std = blue_noise.std()
+    if std > 1e-6:
+        blue_noise = blue_noise / std
+        
+    return blue_noise
+
+
 def resize_tensor_opencv(tensor_chw, target_width, target_height, supersample='true', factor=2.0):
     """
     CPU-based resizing using OpenCV for 'rescale' mode.
@@ -55,8 +89,7 @@ class Upscale_Machine:
                 "upscale_model": (folder_paths.get_filename_list("upscale_models"), {"default": None}),
                 "chained_model": (["None"] + folder_paths.get_filename_list("upscale_models"), {"default": "None"}),
                 "rescale_factor": ("FLOAT", {"default": 2.0, "min": 0.01, "max": 16.0, "step": 0.01}),
-                "supersample": (["true", "false"],),
-                "rounding_modulus": ("INT", {"default": 8, "min": 1, "max": 1024, "step": 1}),
+                "frequency_split": ("BOOLEAN", {"default": True}),
             }
         }
 
@@ -135,7 +168,7 @@ class Upscale_Machine:
         return max(modulus, int(round(value / modulus)) * modulus)
 
     def upscale(self, image, upscale_model, chained_model="None", rounding_modulus=8, supersample='true',
-                rescale_factor=2.0):
+                rescale_factor=2.0, frequency_split=True):
 
         if image.ndim != 4:
             raise ValueError("Expected IMAGE tensor with 4 dims (B,H,W,C).")
@@ -212,5 +245,55 @@ class Upscale_Machine:
                 batch_out.append(resized_chw.unsqueeze(0))
             out_bchw = torch.cat(batch_out, dim=0)
             images_out = out_bchw.movedim(1, -1).contiguous()
+
+        # Apply Frequency-Split SR if enabled
+        if frequency_split and upscale_model:
+            import torchvision.transforms.functional as TF
+            
+            # Upscale original image to target resolution using basic bicubic
+            batch_base = []
+            for i in range(image.shape[0]):
+                chw = image[i].movedim(-1, 0)
+                chw = torch.clamp(chw, 0.0, 1.0)
+                resized_chw = resize_tensor_opencv(
+                    chw, target_width=target_width, target_height=target_height,
+                    supersample='false', factor=rescale_factor
+                )
+                if resized_chw.shape[0] == 1:
+                    resized_chw = resized_chw.repeat(3, 1, 1)
+                elif resized_chw.shape[0] > 3:
+                    resized_chw = resized_chw[:3, :, :]
+                batch_base.append(resized_chw.unsqueeze(0))
+            
+            bicubic_out = torch.cat(batch_base, dim=0).movedim(1, -1).contiguous()
+            
+            def blur_bhwc(tensor_bhwc):
+                tensor_bchw = tensor_bhwc.movedim(-1, 1)
+                h, w = tensor_bchw.shape[-2:]
+                k_y = min(15, h if h % 2 != 0 else h - 1)
+                k_x = min(15, w if w % 2 != 0 else w - 1)
+                k_y = max(1, k_y)
+                k_x = max(1, k_x)
+                if k_y >= 3 and k_x >= 3:
+                    blurred = TF.gaussian_blur(tensor_bchw, [k_y, k_x], [3.0, 3.0])
+                else:
+                    blurred = tensor_bchw
+                return blurred.movedim(1, -1)
+                
+            sr_blurred = blur_bhwc(images_out)
+            sr_high_freq = images_out - sr_blurred
+            
+            bicubic_blurred = blur_bhwc(bicubic_out)
+            images_out = bicubic_blurred + sr_high_freq
+            images_out = torch.clamp(images_out, 0.0, 1.0)
+
+        if chained_model and chained_model != "None":
+            inject_noise_for_realism = 0.15
+            B, H, W, C = images_out.shape
+            device = images_out.device
+            noise = generate_blue_noise(B, C, H, W, device) # shape (B, C, H, W)
+            noise = noise.movedim(1, -1) # shape (B, H, W, C)
+            images_out = images_out + noise * inject_noise_for_realism
+            images_out = torch.clamp(images_out, 0.0, 1.0)
 
         return (images_out,)

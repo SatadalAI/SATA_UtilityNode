@@ -4,14 +4,14 @@ app.registerExtension({
     name: "SATA_UtilityNode.Resolution_Machine",
 
     async nodeCreated(node) {
-        if (node.comfyClass !== "Resolution_Machine") return;
+        if (node.comfyClass !== "Resolution_Machine" && node.comfyClass !== "Latent_Machine") return;
 
         // Find widgets
         const modelWidget = node.widgets.find(w => w.name === "model");
         const dimensionWidget = node.widgets.find(w => w.name === "dimension");
         const resolutionWidget = node.widgets.find(w => w.name === "resolution");
-        const widthWidget = node.widgets.find(w => w.name === "custom_width");
-        const heightWidget = node.widgets.find(w => w.name === "custom_height");
+        const widthWidget = node.widgets.find(w => w.name === "width") || node.widgets.find(w => w.name === "custom_width");
+        const heightWidget = node.widgets.find(w => w.name === "height") || node.widgets.find(w => w.name === "custom_height");
 
         if (!modelWidget || !dimensionWidget || !resolutionWidget || !widthWidget || !heightWidget) {
             console.warn("[Resolution_Machine] Missing widgets, check backend definition.");
@@ -51,19 +51,10 @@ app.registerExtension({
                 });
             }
 
-            // Always add Custom? Or only via button? The plan implies button adds it or it is a fallback.
-            // But if user wants to select custom again after selecting a preset?
-            // "Custom" option should probably be always available or injected.
-            // Let's keep it clean: presets only. Button forces custom mode.
-            // BUT if we want to get out of custom mode, we select a preset.
-            // If we are in custom mode, "Custom" should be in the list?
-
-            if (available.length === 0) {
+            // Always include "Custom" option so that switching model/dimension dropdowns doesn't kick the user out of custom mode
+            if (!available.includes("Custom")) {
                 available.push("Custom");
             }
-
-            // Preserve "Custom" if it was already there/selected? 
-            // Better to re-build list cleanly.
 
             resolutionWidget.options.values = available;
 
@@ -164,6 +155,7 @@ app.registerExtension({
             }
             resolutionWidget.value = "Custom";
 
+            checkCustomMode();
             app.graph.change();
         });
 

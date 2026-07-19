@@ -1,6 +1,6 @@
 import { app } from "../../../scripts/app.js";
 
-const SETTING_ID = "SATA.EnableTouchpadPanZoom";
+const SETTING_ID = "SATA_UtilityNode.EnableTouchpadPanZoom";
 
 app.registerExtension({
     name: "SATA_UtilityNode.TouchpadPanZoom",

@@ -1,5 +1,5 @@
 # Import all the node classes from the nodes directory
-from .nodes.prompt_machine import Prompt_Machine
+from .nodes.prompt_machine import Prompt_Machine, Prompt_Style_Machine
 from .nodes.resolution_machine import Resolution_Machine
 from .nodes.save_machine import Save_Machine
 from .nodes.upscale_machine import Upscale_Machine
@@ -10,6 +10,7 @@ from .nodes.preview_machine import Preview_Machine
 # A dictionary that maps class names to class objects
 NODE_CLASS_MAPPINGS = {
     "Prompt_Machine": Prompt_Machine,
+    "Prompt_Style_Machine": Prompt_Style_Machine,
     "Resolution_Machine": Resolution_Machine,
     "Save_Machine": Save_Machine,
     "Upscale_Machine": Upscale_Machine,
@@ -21,6 +22,7 @@ NODE_CLASS_MAPPINGS = {
 # A dictionary that maps display names to class names
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Prompt_Machine": "Prompt Machine",
+    "Prompt_Style_Machine": "Prompt Style Machine",
     "Resolution_Machine": "Resolution Machine",
     "Save_Machine": "Save Machine",
     "Upscale_Machine": "Upscale Machine",

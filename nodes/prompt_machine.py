@@ -87,7 +87,7 @@ def read_prompt_row(csv_file, name):
     return ("", "", "")
 
 
-class Prompt_Machine:
+class Prompt_Style_Machine:
     """
     NOTE: name is a free STRING (not a static dropdown) to avoid 'Value not in list' validation errors.
     The frontend helper will still provide dropdown-like selection and write the chosen name into this STRING.
@@ -113,8 +113,8 @@ class Prompt_Machine:
             "optional": {}
         }
 
-    RETURN_TYPES = ("STRING", "STRING")
-    RETURN_NAMES = ("positive", "negative")
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("prompt",)
     FUNCTION = "get_prompts"
     CATEGORY = "SATA_UtilityNode"
 
@@ -122,7 +122,52 @@ class Prompt_Machine:
 
         pos, neg, note = read_prompt_row(csv_file, name)
 
-        return (pos, neg)
+        return (pos,)
+
+
+class Prompt_Machine:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "subject": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": True}),
+                "style": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": True}),
+                "lighting": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": True}),
+                "composition": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": True}),
+                "mood": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": True}),
+                "technical": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": True}),
+                "json_output": ("BOOLEAN", {"default": False}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("prompt",)
+    FUNCTION = "get_prompt"
+    CATEGORY = "SATA_UtilityNode"
+
+    def get_prompt(self, subject, style, lighting, composition, mood, technical, json_output):
+        if json_output:
+            import json
+            data = {
+                "subject": subject.strip(),
+                "style": style.strip(),
+                "lighting": lighting.strip(),
+                "composition": composition.strip(),
+                "mood": mood.strip(),
+                "technical": technical.strip()
+            }
+            # Remove empty fields to keep JSON clean
+            data = {k: v for k, v in data.items() if v}
+            return (json.dumps(data, indent=2),)
+        else:
+            parts = []
+            if subject.strip(): parts.append(subject.strip())
+            if style.strip(): parts.append(style.strip())
+            if lighting.strip(): parts.append(lighting.strip())
+            if composition.strip(): parts.append(composition.strip())
+            if mood.strip(): parts.append(mood.strip())
+            if technical.strip(): parts.append(technical.strip())
+            return (", ".join(parts),)
 
 
 # ---------------- REST API ----------------

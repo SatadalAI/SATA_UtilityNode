@@ -4,7 +4,7 @@ import { app } from "../../../scripts/app.js";
 app.registerExtension({
     name: "SATA_UtilityNode.PromptMachineFrontend",
     async nodeCreated(node) {
-        if (node.comfyClass !== "Prompt_Machine") return;
+        if (node.comfyClass !== "Prompt_Style_Machine") return;
 
         // Widgets
         const csvWidget = node.widgets.find(w => w.name === "csv_file");
@@ -76,11 +76,11 @@ app.registerExtension({
             padding: "8px",
             background: "rgba(0,0,0,0.4)",
             borderRadius: "4px",
-            fontSize: "12px",
-            lineHeight: "1.4",
+            fontSize: "14px",
+            lineHeight: "1.5",
             color: "#ddd",
             wordBreak: "break-word",
-            maxHeight: "300px",
+            maxHeight: "400px",
             overflowY: "auto"
         });
         
@@ -97,9 +97,7 @@ app.registerExtension({
                 const resp = await fetch(`/sata/prompt_machine/get?csv=${encodeURIComponent(csv)}&name=${encodeURIComponent(name)}`);
                 const data = await resp.json();
                 let html = "";
-                if (data.positive) html += `<b>Positive:</b> ${data.positive}<br><br>`;
-                if (data.negative) html += `<b>Negative:</b> ${data.negative}<br><br>`;
-                if (data.note) html += `<b>Note:</b> ${data.note}`;
+                if (data.positive) html += `${data.positive}`;
                 
                 previewEl.innerHTML = html || "<i>No preview available</i>";
                 

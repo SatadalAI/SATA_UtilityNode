@@ -313,31 +313,51 @@
     }
   },
   "models": {
-    "SD 1.5": [
+    "SD 1.5 Family": [
       "512",
       "768"
     ],
-    "SDXL_Illustrious_Pony": [
+    "SDXL Family (Pony, Juggernaut)": [
       "768",
       "1024"
     ],
-    "Flux": [
+    "FLUX Family (FLUX.1, FLUX.2)": [
       "1024",
       "1280",
       "1536"
+    ],
+    "SD3 Family (SD3, SD3.5)": [
+      "1024",
+      "1280",
+      "1536"
+    ],
+    "Z-Image Family": [
+      "1024",
+      "1280",
+      "1536"
+    ],
+    "Hunyuan-DiT": [
+      "1024",
+      "1280"
     ],
     "Qwen-Image": [
       "1024",
-      "1280",
-      "1536"
+      "1280"
     ],
-    "Wan2.2": [
-      "Video"
+    "Lumina": [
+      "1024",
+      "1280"
     ],
-    "Z-Image Turbo": [
+    "Ideogram 4": [
       "1024",
       "1280",
       "1536"
+    ],
+    "AuraFlow": [
+      "1024"
+    ],
+    "Video Models (Wan, Hunyuan, Mochi, LTX)": [
+      "Video"
     ]
   }
 }

@@ -1,7 +1,5 @@
-import os
 import torch
-import cv2
-import numpy as np
+import torch.nn.functional as F
 import folder_paths
 import comfy.utils
 from comfy import model_management
@@ -42,45 +40,90 @@ def generate_blue_noise(batch_size, c, h, w, device, beta=1.5):
     return blue_noise
 
 
-def resize_tensor_opencv(tensor_chw, target_width, target_height, supersample='true', factor=2.0):
+def _make_gaussian_kernel(kernel_size, sigma, device):
+    """Build a separable 2D Gaussian kernel tensor (1,1,k,k) on device."""
+    k = kernel_size
+    coords = torch.arange(k, dtype=torch.float32, device=device) - k // 2
+    gauss_1d = torch.exp(-0.5 * (coords / sigma) ** 2)
+    gauss_1d = gauss_1d / gauss_1d.sum()
+    kernel_2d = gauss_1d[:, None] * gauss_1d[None, :]
+    return kernel_2d.view(1, 1, k, k)
+
+
+def fast_gaussian_blur_bchw(tensor_bchw, kernel_size=9, sigma=3.0):
     """
-    CPU-based resizing using OpenCV for 'rescale' mode.
-    Input:  tensor_chw  -> torch.FloatTensor (C,H,W) in [0,1]
-    Output: torch.FloatTensor (C,H,W) in [0,1], guaranteed 3-channel RGB
+    Fast per-channel GPU Gaussian blur via depthwise convolution.
+    Input/Output: BCHW float tensor. Kernel is always created on the same device.
     """
-    new_width = max(1, int(target_width))
-    new_height = max(1, int(target_height))
+    device = tensor_bchw.device
+    k = kernel_size
+    kernel = _make_gaussian_kernel(k, sigma, device)            # on same device
+    C = tensor_bchw.shape[1]
+    kernel_c = kernel.expand(C, 1, k, k).to(device)            # guarantee same device
+    pad = k // 2
+    return F.conv2d(tensor_bchw.contiguous(), kernel_c, padding=pad, groups=C)
 
-    interp = cv2.INTER_LANCZOS4 if factor > 1.0 else cv2.INTER_AREA
 
-    np_img = tensor_chw.permute(1, 2, 0).detach().cpu().numpy()
-    np_img = (np.clip(np_img, 0.0, 1.0) * 255.0).astype(np.uint8)
+def resize_bchw(tensor_bchw, target_h, target_w):
+    """
+    Fast GPU resize — stays on device, no antialias overhead.
+    Bilinear for downscale (smoother), bicubic for upscale (sharper).
+    """
+    in_h, in_w = tensor_bchw.shape[2], tensor_bchw.shape[3]
+    if in_h == target_h and in_w == target_w:
+        return tensor_bchw
+    downscaling = (target_h < in_h) or (target_w < in_w)
+    mode = 'bilinear' if downscaling else 'bicubic'
+    return F.interpolate(tensor_bchw, size=(target_h, target_w), mode=mode, align_corners=False)
 
-    if np_img.ndim == 2:
-        np_img = cv2.cvtColor(np_img, cv2.COLOR_GRAY2RGB)
-    elif np_img.shape[2] == 1:
-        np_img = cv2.cvtColor(np_img, cv2.COLOR_GRAY2RGB)
-    elif np_img.shape[2] == 4:
-        np_img = cv2.cvtColor(np_img, cv2.COLOR_RGBA2RGB)
-    elif np_img.shape[2] > 3:
-        np_img = np_img[:, :, :3]
 
-    if np_img.shape[0] == 0 or np_img.shape[1] == 0:
-        raise ValueError("Input image for OpenCV resize has zero width or height.")
+# ─────────────────────────────────────────────────────────────────────────────
+# Architecture optimization profiles for spandrel models.
+# Keys match the inner nn.Module class name (type(model.model).__name__).
+#
+# tile       : starting tile size for tiled inference (OOM fallback halves it)
+# fp16_model : cast model weights to FP16 before inference (Tensor Core boost)
+# compile    : torch.compile mode — 'reduce-overhead' for fixed-shape tiling
+# ─────────────────────────────────────────────────────────────────────────────
+ARCH_PROFILES = {
+    # ── Fast CNN / RRDB models — full FP16 support, large tiles ──────────────
+    "RRDBNet":      {"tile": 768,  "fp16_model": True,  "compile": "reduce-overhead"},  # ESRGAN, Real-ESRGAN
+    "SRVGGNetCompact": {"tile": 896, "fp16_model": True, "compile": "reduce-overhead"},  # Real-ESRGAN Compact
+    "SPAN":         {"tile": 896,  "fp16_model": True,  "compile": "reduce-overhead"},  # Swift, very fast
+    "PLKSR":        {"tile": 768,  "fp16_model": False, "compile": "reduce-overhead"},  # Lightweight
+    "RealPLKSR":    {"tile": 768,  "fp16_model": False, "compile": "reduce-overhead"},  # Lightweight photo
+    "RCAN":         {"tile": 768,  "fp16_model": True,  "compile": "reduce-overhead"},  # Residual channel attn
+    "SAFMN":        {"tile": 896,  "fp16_model": True,  "compile": "reduce-overhead"},  # Very fast
+    "DITN":         {"tile": 768,  "fp16_model": True,  "compile": "reduce-overhead"},
+    "CRAFT":        {"tile": 768,  "fp16_model": True,  "compile": "reduce-overhead"},
+    "NAFNet":       {"tile": 768,  "fp16_model": True,  "compile": "reduce-overhead"},
+    "OmniSR":       {"tile": 640,  "fp16_model": True,  "compile": "reduce-overhead"},
+    "RGT":          {"tile": 640,  "fp16_model": True,  "compile": "reduce-overhead"},
+    # ── Transformer / attention models — autocast only, conservative tiles ────
+    "DAT":          {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},  # Dual Attention Transformer
+    "DAT_S":        {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},
+    "HAT":          {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},  # Hybrid Attention
+    "HAT_L":        {"tile": 480,  "fp16_model": False, "compile": "reduce-overhead"},  # HAT Large — very heavy
+    "SwinIR":       {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},  # Swin Transformer IR
+    "Swin2SR":      {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},
+    "SAN":          {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},  # Second-order Attn
+    "DRCT":         {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},
+    "ATD":          {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},
+    "GRL":          {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},
+    "FDAT":         {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},
+    "AuraSR":       {"tile": 512,  "fp16_model": False, "compile": "reduce-overhead"},
+}
 
-    if supersample == 'true':
-        ss_width = max(1, new_width * 8)
-        ss_height = max(1, new_height * 8)
-        np_img = cv2.resize(np_img, (ss_width, ss_height), interpolation=interp)
-        if np_img.shape[0] == 0 or np_img.shape[1] == 0:
-            raise ValueError("Image became empty after supersample resize.")
-
-    resized = cv2.resize(np_img, (new_width, new_height), interpolation=interp)
-    tensor_out = torch.from_numpy(resized).float().div(255.0).permute(2, 0, 1)
-    return tensor_out
+# Fallback profile for any architecture not listed above.
+# Uses supports_half from spandrel for fp16_model, 512 tile as safe default.
+_DEFAULT_PROFILE = {"tile": 512, "fp16_model": None, "compile": "reduce-overhead"}
 
 
 class Upscale_Machine:
+    # Session-level cache: model object id -> torch.compile'd inner module
+    # Avoids recompiling the same model on repeated runs in the same session.
+    _compiled_cache: dict = {}
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -99,10 +142,7 @@ class Upscale_Machine:
     CATEGORY = "SATA_UtilityNode"
 
     def load_model(self, model_name):
-        """Load ESRGAN/RealESRGAN/AESRGAN from the project's upscale_models folder.
-
-        Only legacy PyTorch/spandrel models are supported by this simplified node.
-        """
+        """Load ESRGAN/RealESRGAN/AESRGAN from the project's upscale_models folder."""
         if not model_name:
             raise ValueError("No upscale model selected or provided.")
 
@@ -116,40 +156,109 @@ class Upscale_Machine:
         model.eval()
         return model
 
-    def upscale_with_model(self, upscale_model, image_bhwc, pbar=None):
+    def _get_arch_profile(self, upscale_model):
         """
-        Run tiled upscale with spandrel model.
-        Input:  image_bhwc -> (B,H,W,C) float [0,1]
-        Output: (B,C,H',W') float [0,1]
+        Detects the model architecture and returns its optimisation profile.
+        Detection priority:
+          1. Inner nn.Module class name (most specific)
+          2. spandrel supports_half flag (fallback for unknown architectures)
         """
-        device = model_management.get_torch_device()
+        inner_cls = type(upscale_model.model).__name__
+        profile = ARCH_PROFILES.get(inner_cls)
+        if profile is None:
+            # Unknown architecture — use spandrel flag for fp16 decision
+            fp16_ok = getattr(upscale_model, "supports_half", False)
+            profile = {**_DEFAULT_PROFILE, "fp16_model": fp16_ok}
+        return inner_cls, profile
+
+    def _get_compiled_model(self, upscale_model, compile_mode):
+        """
+        Returns a torch.compile()'d version of the model's inner nn.Module.
+        Cached by object id — compiles once per session per loaded model.
+        Falls back silently to eager mode if compile fails or Triton is missing.
+        """
+        inner = upscale_model.model
+        cache_key = id(inner)
+        if cache_key not in Upscale_Machine._compiled_cache:
+            # Check for triton before attempting compile, as torch.compile is lazy
+            # and will otherwise crash on the first tile execution on Windows.
+            try:
+                import triton
+                has_triton = True
+            except ImportError:
+                has_triton = False
+
+            if has_triton:
+                try:
+                    compiled = torch.compile(inner, mode=compile_mode, dynamic=False)
+                    Upscale_Machine._compiled_cache[cache_key] = compiled
+                except Exception as ex:
+                    print(f"[Upscale_Machine] torch.compile unavailable ({ex}), using eager mode.")
+                    Upscale_Machine._compiled_cache[cache_key] = inner
+            else:
+                print("[Upscale_Machine] Triton not installed (Windows), skipping torch.compile.")
+                Upscale_Machine._compiled_cache[cache_key] = inner
+                
+        return Upscale_Machine._compiled_cache[cache_key]
+
+    def upscale_with_model(self, upscale_model, image_bchw, device, pbar=None):
+        """
+        Architecture-aware tiled upscale:
+          - Detects model type and loads optimisation profile
+          - FP16 weights (Tensor Cores) for CNN models that support it
+          - torch.autocast for mixed-precision on every tile (all architectures)
+          - torch.compile fused graph (cached per session, falls back safely)
+        Input:  image_bchw -> (B,C,H,W) float32 [0,1]
+        Output: (B,C,H',W') float32 [0,1]
+        """
+        arch_name, profile = self._get_arch_profile(upscale_model)
+        spandrel_supports_half = getattr(upscale_model, "supports_half", False)
+        use_fp16   = profile["fp16_model"] and spandrel_supports_half
+        tile       = profile["tile"]
+        comp_mode  = profile["compile"]
+        device_type = device.type if hasattr(device, "type") else str(device).split(":")[0]
+
+        print(f"[Upscale_Machine] {arch_name} | "
+              f"tile={tile} | fp16={'yes' if use_fp16 else 'no'} | compile={comp_mode}")
+
         upscale_model.to(device)
+        if use_fp16:
+            upscale_model.half()
+            in_tensor = image_bchw.to(device).half()
+        else:
+            in_tensor = image_bchw.to(device).float()
+
+        # Compile inner nn.Module once per session
+        compiled_fn = self._get_compiled_model(upscale_model, comp_mode)
 
         try:
-            in_img = image_bhwc.movedim(-1, -3).to(device)
-
-            tile = 512
             overlap = 32
             oom = True
             while oom:
                 try:
                     if not pbar:
-                        steps = in_img.shape[0] * comfy.utils.get_tiled_scale_steps(
-                            in_img.shape[3], in_img.shape[2], tile_x=tile, tile_y=tile, overlap=overlap
+                        steps = in_tensor.shape[0] * comfy.utils.get_tiled_scale_steps(
+                            in_tensor.shape[3], in_tensor.shape[2], tile_x=tile, tile_y=tile, overlap=overlap
                         )
                         local_pbar = comfy.utils.ProgressBar(steps)
                     else:
                         local_pbar = pbar
 
-                    s = comfy.utils.tiled_scale(
-                        in_img,
-                        lambda a: upscale_model(a),
-                        tile_x=tile,
-                        tile_y=tile,
-                        overlap=overlap,
-                        upscale_amount=getattr(upscale_model, "scale", 4),
-                        pbar=local_pbar
-                    )
+                    import contextlib
+                    # If model doesn't support fp16 (like DAT/HAT), autocast to fp16 will also cause NaNs.
+                    # We only autocast if use_fp16 is True to be perfectly safe.
+                    ctx = torch.autocast(device_type=device_type, dtype=torch.float16) if use_fp16 else contextlib.nullcontext()
+                    
+                    with ctx:
+                        s = comfy.utils.tiled_scale(
+                            in_tensor,
+                            lambda a: compiled_fn(a),
+                            tile_x=tile,
+                            tile_y=tile,
+                            overlap=overlap,
+                            upscale_amount=getattr(upscale_model, "scale", 4),
+                            pbar=local_pbar
+                        )
                     oom = False
                 except model_management.OOM_EXCEPTION as e:
                     model_management.soft_empty_cache()
@@ -157,10 +266,9 @@ class Upscale_Machine:
                     if tile < 128:
                         raise e
         finally:
-            upscale_model.cpu()
+            upscale_model.cpu().float()   # Always restore to FP32 on CPU
 
-        s = torch.clamp(s, min=0.0, max=1.0)
-        return s
+        return torch.clamp(s.float(), min=0.0, max=1.0)
 
     def _round_to_modulus(self, value, modulus):
         if modulus is None or modulus <= 1:
@@ -173,127 +281,60 @@ class Upscale_Machine:
         if image.ndim != 4:
             raise ValueError("Expected IMAGE tensor with 4 dims (B,H,W,C).")
 
+        device = model_management.get_torch_device()
+
         original_height = int(image.shape[1])
         original_width = int(image.shape[2])
-        target_width = self._round_to_modulus(original_width * rescale_factor, rounding_modulus)
-        target_height = self._round_to_modulus(original_height * rescale_factor, rounding_modulus)
+        target_w = self._round_to_modulus(original_width * rescale_factor, rounding_modulus)
+        target_h = self._round_to_modulus(original_height * rescale_factor, rounding_modulus)
 
-        current_bhwc = image
-        
-        # Calculate total steps for progress bar
-        total_steps = 0
-        if upscale_model:
-            total_steps += image.shape[0] * comfy.utils.get_tiled_scale_steps(
-                image.shape[2], image.shape[1], tile_x=512, tile_y=512, overlap=32
-            )
-        if chained_model and chained_model != "None":
-            # Rough estimate: if chained model runs on target_width/height after intermediate downscale
-            total_steps += image.shape[0] * comfy.utils.get_tiled_scale_steps(
-                target_width, target_height, tile_x=512, tile_y=512, overlap=32
-            )
+        # Move to GPU once as BCHW — stay there the entire pipeline
+        current_bchw = image.movedim(-1, 1).to(device)
+        if current_bchw.shape[1] == 1:
+            current_bchw = current_bchw.repeat(1, 3, 1, 1)
+        elif current_bchw.shape[1] > 3:
+            current_bchw = current_bchw[:, :3, :, :]
 
-        pbar = comfy.utils.ProgressBar(total_steps) if total_steps > 0 else None
+        # Keep a clean GPU copy of original for frequency split baseline
+        original_bchw = current_bchw.clone()
 
-        # First upscale
+        # ── First upscale model ───────────────────────────────────────────────
         if upscale_model:
             up_model = self.load_model(upscale_model)
-            up_bchw = self.upscale_with_model(up_model, current_bhwc, pbar)
-            current_bhwc = up_bchw.movedim(1, -1).contiguous()
+            current_bchw = self.upscale_with_model(up_model, current_bchw, device)
+            # tiled_scale may return CPU tensor — pin back to GPU
+            current_bchw = current_bchw.to(device)
+            current_bchw = resize_bchw(current_bchw, target_h, target_w)
 
-            # Downscale to target size before chaining
-            batch_downscaled = []
-            for i in range(current_bhwc.shape[0]):
-                chw = current_bhwc[i].movedim(-1, 0)  # (H,W,C) -> (C,H,W)
-                chw = torch.clamp(chw, 0.0, 1.0)
-                resized_chw = resize_tensor_opencv(
-                    chw, target_width=target_width, target_height=target_height,
-                    supersample=supersample, factor=rescale_factor
-                )
-                if resized_chw.shape[0] == 1:
-                    resized_chw = resized_chw.repeat(3, 1, 1)
-                elif resized_chw.shape[0] > 3:
-                    resized_chw = resized_chw[:3, :, :]
-                batch_downscaled.append(resized_chw.unsqueeze(0))
-            current_bhwc = torch.cat(batch_downscaled, dim=0)
-            current_bhwc = current_bhwc.movedim(1, -1).contiguous()
-
-        # Second upscale (chained model) if selected
-        if chained_model and chained_model != "None":
-            # chained model is a model name
+        # ── Chained model ─────────────────────────────────────────────────────
+        has_chain = chained_model and chained_model != "None"
+        if has_chain:
             chain_model = self.load_model(chained_model)
-            chain_bchw = self.upscale_with_model(chain_model, current_bhwc, pbar)
-            current_bhwc = chain_bchw.movedim(1, -1).contiguous()
+            current_bchw = self.upscale_with_model(chain_model, current_bchw, device)
+            # tiled_scale may return CPU tensor — pin back to GPU
+            current_bchw = current_bchw.to(device)
+            current_bchw = resize_bchw(current_bchw, target_h, target_w)
 
-        # If no chained model, ensure output is at target size
-        if not (chained_model and chained_model != "None"):
-            # Already downscaled after first upscale, so just output
-            images_out = current_bhwc
-        else:
-            # After chained model, do a final resize to target size
-            batch_out = []
-            for i in range(current_bhwc.shape[0]):
-                chw = current_bhwc[i].movedim(-1, 0)
-                chw = torch.clamp(chw, 0.0, 1.0)
-                resized_chw = resize_tensor_opencv(
-                    chw, target_width=target_width, target_height=target_height,
-                    supersample=supersample, factor=rescale_factor
-                )
-                if resized_chw.shape[0] == 1:
-                    resized_chw = resized_chw.repeat(3, 1, 1)
-                elif resized_chw.shape[0] > 3:
-                    resized_chw = resized_chw[:3, :, :]
-                batch_out.append(resized_chw.unsqueeze(0))
-            out_bchw = torch.cat(batch_out, dim=0)
-            images_out = out_bchw.movedim(1, -1).contiguous()
+        images_out = current_bchw
 
-        # Apply Frequency-Split SR if enabled
+        # ── Frequency-Split SR ────────────────────────────────────────────────
         if frequency_split and upscale_model:
-            import torchvision.transforms.functional as TF
-            
-            # Upscale original image to target resolution using basic bicubic
-            batch_base = []
-            for i in range(image.shape[0]):
-                chw = image[i].movedim(-1, 0)
-                chw = torch.clamp(chw, 0.0, 1.0)
-                resized_chw = resize_tensor_opencv(
-                    chw, target_width=target_width, target_height=target_height,
-                    supersample='false', factor=rescale_factor
-                )
-                if resized_chw.shape[0] == 1:
-                    resized_chw = resized_chw.repeat(3, 1, 1)
-                elif resized_chw.shape[0] > 3:
-                    resized_chw = resized_chw[:3, :, :]
-                batch_base.append(resized_chw.unsqueeze(0))
-            
-            bicubic_out = torch.cat(batch_base, dim=0).movedim(1, -1).contiguous()
-            
-            def blur_bhwc(tensor_bhwc):
-                tensor_bchw = tensor_bhwc.movedim(-1, 1)
-                h, w = tensor_bchw.shape[-2:]
-                k_y = min(15, h if h % 2 != 0 else h - 1)
-                k_x = min(15, w if w % 2 != 0 else w - 1)
-                k_y = max(1, k_y)
-                k_x = max(1, k_x)
-                if k_y >= 3 and k_x >= 3:
-                    blurred = TF.gaussian_blur(tensor_bchw, [k_y, k_x], [3.0, 3.0])
-                else:
-                    blurred = tensor_bchw
-                return blurred.movedim(1, -1)
-                
-            sr_blurred = blur_bhwc(images_out)
-            sr_high_freq = images_out - sr_blurred
-            
-            bicubic_blurred = blur_bhwc(bicubic_out)
-            images_out = bicubic_blurred + sr_high_freq
-            images_out = torch.clamp(images_out, 0.0, 1.0)
+            # Ensure both tensors are on the same device before any arithmetic
+            bicubic_bchw = resize_bchw(original_bchw.to(device), target_h, target_w)
+            images_out = images_out.to(device)
 
-        if chained_model and chained_model != "None":
-            inject_noise_for_realism = 0.15
-            B, H, W, C = images_out.shape
-            device = images_out.device
-            noise = generate_blue_noise(B, C, H, W, device) # shape (B, C, H, W)
-            noise = noise.movedim(1, -1) # shape (B, H, W, C)
-            images_out = images_out + noise * inject_noise_for_realism
-            images_out = torch.clamp(images_out, 0.0, 1.0)
+            sr_low  = fast_gaussian_blur_bchw(images_out)
+            sr_high = images_out - sr_low
 
-        return (images_out,)
+            bic_low = fast_gaussian_blur_bchw(bicubic_bchw)
+            images_out = torch.clamp(bic_low + sr_high, 0.0, 1.0)
+
+        # ── Blue Noise realism (chained only) ─────────────────────────────────
+        if has_chain:
+            images_out = images_out.to(device)
+            B, C, H, W = images_out.shape
+            noise = generate_blue_noise(B, C, H, W, device)
+            images_out = torch.clamp(images_out + noise * 0.15, 0.0, 1.0)
+
+        # Convert back to BHWC for ComfyUI
+        return (images_out.movedim(1, -1).contiguous(),)
